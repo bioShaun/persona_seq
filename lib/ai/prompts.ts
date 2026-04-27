@@ -10,6 +10,10 @@ const proposalStructure = [
   "7. 需要客户补充确认的问题",
 ].join("\n");
 
+function escapePromptDataBlock(input: string) {
+  return input.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
 export function buildInitialProposalPrompt(input: InitialProposalInput) {
   return [
     "你是资深生物信息分析方案顾问。请把客户的原始需求整理成专业、清晰、可交付的分析方案草稿。",
@@ -18,7 +22,7 @@ export function buildInitialProposalPrompt(input: InitialProposalInput) {
     "",
     "客户原始需求:",
     "<customer_request>",
-    input.originalRequestText,
+    escapePromptDataBlock(input.originalRequestText),
     "</customer_request>",
     "",
     "请输出以下三部分:",
@@ -39,17 +43,17 @@ export function buildRevisionProposalPrompt(input: RevisionProposalInput) {
     "",
     "客户原始需求:",
     "<customer_request>",
-    input.originalRequestText,
+    escapePromptDataBlock(input.originalRequestText),
     "</customer_request>",
     "",
     "上一版已确认方案:",
     "<previous_confirmed_proposal>",
-    input.previousConfirmedProposal,
+    escapePromptDataBlock(input.previousConfirmedProposal),
     "</previous_confirmed_proposal>",
     "",
     "客户最新反馈:",
     "<customer_feedback>",
-    input.customerFeedbackText,
+    escapePromptDataBlock(input.customerFeedbackText),
     "</customer_feedback>",
     "",
     "请输出以下三部分:",
