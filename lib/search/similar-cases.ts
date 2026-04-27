@@ -57,6 +57,29 @@ function containsTermInsensitive(content: string | null, term: string) {
   return content.toLowerCase().includes(term.toLowerCase());
 }
 
+export function buildMatchedReason(input: {
+  terms: string[];
+  requirementSummary: string | null;
+  originalRequestText: string;
+  latestAnalystConfirmedText: string | null;
+}) {
+  for (const term of input.terms) {
+    if (containsTermInsensitive(input.requirementSummary, term)) {
+      return `Matched requirement summary: ${term}`;
+    }
+
+    if (containsTermInsensitive(input.originalRequestText, term)) {
+      return `Matched original request: ${term}`;
+    }
+
+    if (containsTermInsensitive(input.latestAnalystConfirmedText, term)) {
+      return `Matched confirmed proposal: ${term}`;
+    }
+  }
+
+  return "Matched accepted historical case";
+}
+
 export async function findSimilarAcceptedCases(input: {
   originalRequestText: string;
   requirementSummary: string | null;
@@ -87,6 +110,7 @@ export async function findSimilarAcceptedCases(input: {
       title: true,
       customerName: true,
       requirementSummary: true,
+      originalRequestText: true,
       updatedAt: true,
       revisions: {
         orderBy: { revisionNumber: "desc" },
@@ -103,16 +127,14 @@ export async function findSimilarAcceptedCases(input: {
   });
 
   return cases.map((caseItem) => {
-    const matchedTerm =
-      terms.find(
-        (term) =>
-          containsTermInsensitive(caseItem.requirementSummary, term) ||
-          containsTermInsensitive(caseItem.revisions[0]?.analystConfirmedText ?? null, term),
-      ) ?? terms[0];
-
     return {
       ...caseItem,
-      matchedReason: matchedTerm ? `Matched on "${matchedTerm}"` : null,
+      matchedReason: buildMatchedReason({
+        terms,
+        requirementSummary: caseItem.requirementSummary,
+        originalRequestText: caseItem.originalRequestText,
+        latestAnalystConfirmedText: caseItem.revisions[0]?.analystConfirmedText ?? null,
+      }),
     };
   });
 }
