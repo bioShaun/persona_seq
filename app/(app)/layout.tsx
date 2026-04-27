@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { FlaskConical, FolderKanban, PlusSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FlaskConical } from "lucide-react";
+import { AppNav } from "@/components/app-nav";
 
 export default function AppLayout({
   children,
@@ -20,20 +19,7 @@ export default function AppLayout({
               生信方案工作台
             </h1>
           </div>
-          <nav aria-label="Primary" className="flex items-center gap-2">
-            <Button asChild variant="secondary" className="border border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800">
-              <Link href="/cases">
-                <FolderKanban className="mr-2 size-4" aria-hidden />
-                案例列表
-              </Link>
-            </Button>
-            <Button asChild className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">
-              <Link href="/cases/new">
-                <PlusSquare className="mr-2 size-4" aria-hidden />
-                新建案例
-              </Link>
-            </Button>
-          </nav>
+          <AppNav />
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl px-6 py-8">{children}</main>

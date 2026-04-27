@@ -13,6 +13,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -72,6 +73,9 @@ export default async function CasesPage() {
             </div>
           ) : (
             <Table>
+              <TableCaption className="sr-only">
+                案例列表，按更新时间倒序展示。每一行包含项目名、客户、状态、当前轮次与进入详情的操作入口。
+              </TableCaption>
               <TableHeader>
                 <TableRow className="border-slate-700 hover:bg-transparent">
                   <TableHead className="text-slate-300">项目</TableHead>

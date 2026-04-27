@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   generateInitialProposalDraft,
   generateRevisionProposalDraft,
@@ -48,6 +49,7 @@ export async function createCaseAndGenerateDraft(formData: FormData) {
   });
 
   revalidatePath("/cases");
+  redirect(`/cases/${proposalCase.id}`);
 }
 
 export async function confirmCurrentRevision(formData: FormData) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createCaseAndGenerateDraft } from "@/app/(app)/cases/actions";
+import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -83,10 +84,11 @@ export default function NewCasePage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <Button type="submit" className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">
-                <Sparkles className="mr-2 size-4" aria-hidden />
-                创建并生成草稿
-              </Button>
+              <SubmitButton
+                idleText="创建并生成草稿"
+                pendingText="生成中..."
+                className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
+              />
             </div>
           </form>
         </CardContent>
