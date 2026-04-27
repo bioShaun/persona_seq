@@ -8,24 +8,24 @@ datasource db {
 }
 
 enum UserRole {
-  PM
-  ANALYST
-  ADMIN
+  PM      @map("pm")
+  ANALYST @map("analyst")
+  ADMIN   @map("admin")
 }
 
 enum ProposalStatus {
-  DRAFTING
-  ANALYST_REVIEW
-  READY_TO_SEND
-  WAITING_CUSTOMER_FEEDBACK
-  REVISION_NEEDED
-  ACCEPTED
-  CANCELED
+  DRAFTING                  @map("drafting")
+  ANALYST_REVIEW            @map("analyst_review")
+  READY_TO_SEND             @map("ready_to_send")
+  WAITING_CUSTOMER_FEEDBACK @map("waiting_customer_feedback")
+  REVISION_NEEDED           @map("revision_needed")
+  ACCEPTED                  @map("accepted")
+  CANCELED                  @map("canceled")
 }
 
 enum FinalOutcome {
-  ACCEPTED
-  CANCELED
+  ACCEPTED @map("accepted")
+  CANCELED @map("canceled")
 }
 
 model User {
@@ -55,9 +55,9 @@ model ProposalCase {
   updatedAt             DateTime       @updatedAt
 
   pmUserId      String
-  pmUser        User    @relation("PmCases", fields: [pmUserId], references: [id])
+  pmUser        User    @relation("PmCases", fields: [pmUserId], references: [id], onDelete: Restrict)
   analystUserId String?
-  analystUser   User?   @relation("AnalystCases", fields: [analystUserId], references: [id])
+  analystUser   User?   @relation("AnalystCases", fields: [analystUserId], references: [id], onDelete: SetNull)
 
   revisions Revision[]
   auditLogs AuditLog[]
@@ -100,8 +100,8 @@ model AuditLog {
   createdAt      DateTime        @default(now())
 
   proposalCase ProposalCase @relation(fields: [proposalCaseId], references: [id], onDelete: Cascade)
-  revision     Revision?    @relation(fields: [revisionId], references: [id])
-  actor        User         @relation(fields: [actorUserId], references: [id])
+  revision     Revision?    @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  actor        User         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([proposalCaseId])
   @@index([actorUserId])
