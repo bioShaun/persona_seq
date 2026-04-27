@@ -20,6 +20,11 @@ export type RevisionDraft = {
   revisionNotes: string | null;
 };
 
+export type RevisionWorkflowState = RevisionDraft & {
+  confirmedByAnalystAt?: Date;
+  sentToCustomerAt?: Date | null;
+};
+
 export type AuthenticatedUser = {
   id: string;
   name: string;

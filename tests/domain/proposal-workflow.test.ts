@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createInitialRevision,
   createRevisionFromCustomerFeedback,
@@ -21,6 +21,14 @@ describe("proposal workflow helpers", () => {
     });
   });
 
+  it("rejects empty AI draft for initial revision", () => {
+    expect(() =>
+      createInitialRevision({
+        aiDraft: " ",
+      }),
+    ).toThrow("AI draft is required");
+  });
+
   it("creates a customer feedback revision using the next revision number", () => {
     expect(
       createRevisionFromCustomerFeedback({
@@ -37,6 +45,41 @@ describe("proposal workflow helpers", () => {
     });
   });
 
+  it("rejects empty customer feedback text", () => {
+    expect(() =>
+      createRevisionFromCustomerFeedback({
+        currentRevisionNumber: 1,
+        customerFeedbackText: " ",
+        aiDraft: "修订草稿",
+        revisionNotes: null,
+      }),
+    ).toThrow("Customer feedback text is required");
+  });
+
+  it("rejects empty AI draft for feedback revision", () => {
+    expect(() =>
+      createRevisionFromCustomerFeedback({
+        currentRevisionNumber: 1,
+        customerFeedbackText: "客户反馈",
+        aiDraft: " ",
+        revisionNotes: null,
+      }),
+    ).toThrow("AI draft is required");
+  });
+
+  it("rejects invalid current revision numbers", () => {
+    for (const invalidRevisionNumber of [0, -1, 1.5]) {
+      expect(() =>
+        createRevisionFromCustomerFeedback({
+          currentRevisionNumber: invalidRevisionNumber,
+          customerFeedbackText: "客户反馈",
+          aiDraft: "修订草稿",
+          revisionNotes: null,
+        }),
+      ).toThrow("Current revision number must be a positive integer");
+    }
+  });
+
   it("confirms a revision with analyst text", () => {
     expect(
       markRevisionConfirmed({
@@ -44,6 +87,37 @@ describe("proposal workflow helpers", () => {
         analystConfirmedText: "分析人员确认版",
       }).analystConfirmedText,
     ).toBe("分析人员确认版");
+  });
+
+  it("uses the provided confirmedAt timestamp when confirming a revision", () => {
+    const confirmedAt = new Date("2026-04-27T00:00:00.000Z");
+
+    const confirmed = markRevisionConfirmed({
+      revisionNumber: 1,
+      customerFeedbackText: null,
+      aiDraft: "AI 草稿",
+      analystConfirmedText: "分析人员确认版",
+      revisionNotes: null,
+      confirmedAt,
+    });
+
+    expect(confirmed.confirmedByAnalystAt?.toISOString()).toBe("2026-04-27T00:00:00.000Z");
+  });
+
+  it("defaults confirmedAt to current time when not provided", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-27T10:00:00.000Z"));
+
+    const confirmed = markRevisionConfirmed({
+      revisionNumber: 1,
+      customerFeedbackText: null,
+      aiDraft: "AI 草稿",
+      analystConfirmedText: "分析人员确认版",
+      revisionNotes: null,
+    });
+
+    expect(confirmed.confirmedByAnalystAt?.toISOString()).toBe("2026-04-27T10:00:00.000Z");
+    vi.useRealTimers();
   });
 
   it("rejects empty analyst confirmed text", () => {
@@ -62,5 +136,17 @@ describe("proposal workflow helpers", () => {
     });
 
     expect(sent.sentToCustomerAt?.toISOString()).toBe("2026-04-27T00:00:00.000Z");
+  });
+
+  it("rejects sending a revision without analyst confirmed text", () => {
+    expect(() =>
+      markRevisionSent({
+        revisionNumber: 1,
+        customerFeedbackText: null,
+        aiDraft: "AI 草稿",
+        analystConfirmedText: " ",
+        revisionNotes: null,
+      }),
+    ).toThrow("Cannot send a revision before analyst confirmation");
   });
 });
