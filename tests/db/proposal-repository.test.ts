@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FinalOutcome, ProposalStatus } from "@prisma/client";
 import {
   assertCaseAwaitingAnalystReview,
+  assertCaseReadyForFeedbackRevision,
   assertCaseReadyForInitialGeneration,
   assertCaseReadyToSend,
   assertCaseWaitingCustomerFeedback,
@@ -111,5 +112,42 @@ describe("proposal repository invariants", () => {
         createCase({ finalOutcome: FinalOutcome.CANCELED }),
       ),
     ).toThrowError("Proposal case is not waiting for customer feedback");
+  });
+
+  it("requires a confirmed latest revision before generating a feedback revision", () => {
+    expect(() =>
+      assertCaseReadyForFeedbackRevision(
+        createCase({ status: ProposalStatus.READY_TO_SEND }),
+        createRevision(),
+      ),
+    ).toThrowError("Proposal case is not waiting for customer feedback");
+
+    expect(() =>
+      assertCaseReadyForFeedbackRevision(
+        createCase({ status: ProposalStatus.WAITING_CUSTOMER_FEEDBACK }),
+        null,
+      ),
+    ).toThrowError("Current revision mismatch while creating a new revision");
+
+    expect(() =>
+      assertCaseReadyForFeedbackRevision(
+        createCase({ status: ProposalStatus.WAITING_CUSTOMER_FEEDBACK }),
+        createRevision({
+          analystConfirmedText: "  ",
+        }),
+      ),
+    ).toThrowError(
+      "Previous analyst-confirmed proposal is required before creating a revision",
+    );
+
+    expect(() =>
+      assertCaseReadyForFeedbackRevision(
+        createCase({
+          status: ProposalStatus.WAITING_CUSTOMER_FEEDBACK,
+          currentRevisionNumber: 2,
+        }),
+        createRevision({ revisionNumber: 1 }),
+      ),
+    ).toThrowError("Current revision mismatch while creating a new revision");
   });
 });

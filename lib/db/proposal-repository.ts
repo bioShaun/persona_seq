@@ -5,6 +5,7 @@ import {
   type Revision,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { createRevisionFromCustomerFeedback as buildFeedbackRevision } from "@/lib/domain/proposal-workflow";
 
 type CreateProposalCaseInput = {
   title: string;
@@ -38,6 +39,14 @@ type MarkSentToCustomerInput = {
 type MarkCustomerOutcomeInput = {
   proposalCaseId: string;
   actorUserId: string;
+};
+
+type CreateRevisionFromCustomerFeedbackInput = {
+  proposalCaseId: string;
+  actorUserId: string;
+  customerFeedbackText: string;
+  aiDraft: string;
+  revisionNotes: string | null;
 };
 
 export type ProposalCaseInvariantSnapshot = Pick<
@@ -131,6 +140,25 @@ export function assertCaseWaitingCustomerFeedback(
     proposalCase.finalOutcome !== null
   ) {
     throw new Error("Proposal case is not waiting for customer feedback");
+  }
+}
+
+export function assertCaseReadyForFeedbackRevision(
+  proposalCase: ProposalCaseInvariantSnapshot,
+  latestRevision: RevisionInvariantSnapshot | null,
+) {
+  assertCaseWaitingCustomerFeedback(proposalCase);
+
+  if (!latestRevision) {
+    throw new Error("Current revision mismatch while creating a new revision");
+  }
+  if (!latestRevision.analystConfirmedText?.trim()) {
+    throw new Error(
+      "Previous analyst-confirmed proposal is required before creating a revision",
+    );
+  }
+  if (latestRevision.revisionNumber !== proposalCase.currentRevisionNumber) {
+    throw new Error("Current revision mismatch while creating a new revision");
   }
 }
 
@@ -510,5 +538,86 @@ export async function markCustomerCanceled(input: MarkCustomerOutcomeInput) {
     });
 
     return updatedCase;
+  });
+}
+
+export async function createRevisionFromCustomerFeedback(
+  input: CreateRevisionFromCustomerFeedbackInput,
+) {
+  return prisma.$transaction(async (tx) => {
+    const proposalCase = await tx.proposalCase.findUnique({
+      where: { id: input.proposalCaseId },
+      select: {
+        id: true,
+        status: true,
+        currentRevisionNumber: true,
+        finalOutcome: true,
+      },
+    });
+
+    if (!proposalCase) {
+      throw new Error("Proposal case was not found");
+    }
+
+    const latestRevision = await tx.revision.findFirst({
+      where: { proposalCaseId: input.proposalCaseId },
+      orderBy: { revisionNumber: "desc" },
+      select: {
+        id: true,
+        proposalCaseId: true,
+        revisionNumber: true,
+        analystConfirmedText: true,
+        sentToCustomerAt: true,
+      },
+    });
+
+    assertCaseReadyForFeedbackRevision(proposalCase, latestRevision);
+
+    const nextRevision = buildFeedbackRevision({
+      currentRevisionNumber: proposalCase.currentRevisionNumber,
+      customerFeedbackText: input.customerFeedbackText,
+      aiDraft: input.aiDraft,
+      revisionNotes: input.revisionNotes,
+    });
+
+    const updateResult = await tx.proposalCase.updateMany({
+      where: {
+        id: input.proposalCaseId,
+        status: ProposalStatus.WAITING_CUSTOMER_FEEDBACK,
+        finalOutcome: null,
+        currentRevisionNumber: proposalCase.currentRevisionNumber,
+      },
+      data: {
+        status: ProposalStatus.ANALYST_REVIEW,
+        currentRevisionNumber: nextRevision.revisionNumber,
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      throw new Error("Proposal case is not waiting for customer feedback");
+    }
+
+    const createdRevision = await tx.revision.create({
+      data: {
+        proposalCaseId: input.proposalCaseId,
+        revisionNumber: nextRevision.revisionNumber,
+        customerFeedbackText: nextRevision.customerFeedbackText,
+        aiDraft: nextRevision.aiDraft,
+        revisionNotes: nextRevision.revisionNotes,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        proposalCaseId: input.proposalCaseId,
+        revisionId: createdRevision.id,
+        actorUserId: input.actorUserId,
+        action: "generate_revision_draft",
+        beforeStatus: ProposalStatus.WAITING_CUSTOMER_FEEDBACK,
+        afterStatus: ProposalStatus.ANALYST_REVIEW,
+      },
+    });
+
+    return createdRevision;
   });
 }
