@@ -23,22 +23,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     return seededUser;
   }
 
-  const firstPmUser = await prisma.user.findFirst({
-    where: { role: UserRole.PM },
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      role: true,
-    },
-  });
-
-  if (firstPmUser) {
-    return firstPmUser;
-  }
-
-  // Temporary auth boundary until Auth.js session wiring is available.
-  return {
-    id: TEMP_CURRENT_USER_ID,
-    role: UserRole.PM,
-  };
+  throw new Error(
+    "Current user is not configured. Run prisma seed or configure authentication.",
+  );
 }
