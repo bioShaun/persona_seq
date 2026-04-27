@@ -13,7 +13,8 @@ export async function generateInitialProposalDraft(
   const text = await provider.generateText(buildInitialProposalPrompt(input));
 
   return {
-    requirementSummary: extractSection(text, "A") || "AI 已生成需求摘要，请分析人员确认。",
+    requirementSummary:
+      extractSection(text, "A") || "AI 已生成需求摘要，请分析人员确认。",
     missingInformation: extractSection(text, "B") || "AI 未识别出缺失信息。",
     proposalDraft: extractSection(text, "C") || text,
   };
@@ -34,21 +35,28 @@ export async function generateRevisionProposalDraft(
 }
 
 function extractSection(text: string, marker: "A" | "B" | "C") {
-  const sectionPattern = /(^|\n)\s*([ABC])\.\s/g;
-  const matches = Array.from(text.matchAll(sectionPattern)).map((match) => ({
-    marker: match[2] as "A" | "B" | "C",
-    start: (match.index ?? 0) + match[1].length,
+  return parseLetteredSections(text)[marker]?.trim() ?? null;
+}
+
+const sectionHeaderPattern =
+  /^[ \t]{0,3}(?:#{1,6}[ \t]*)?([ABC])[ \t]*[.)：:](?:[ \t]*.*)?$/gm;
+
+type SectionMarker = "A" | "B" | "C";
+
+export function parseLetteredSections(text: string) {
+  const matches = Array.from(text.matchAll(sectionHeaderPattern)).map((match) => ({
+    marker: match[1] as SectionMarker,
+    start: match.index ?? 0,
   }));
 
-  const currentSectionIndex = matches.findIndex(
-    (match) => match.marker === marker,
-  );
-  if (currentSectionIndex === -1) return null;
+  const sections: Partial<Record<SectionMarker, string>> = {};
+  for (let index = 0; index < matches.length; index += 1) {
+    const current = matches[index];
+    const next = matches[index + 1];
+    if (!sections[current.marker]) {
+      sections[current.marker] = text.slice(current.start, next?.start).trim();
+    }
+  }
 
-  const currentSection = matches[currentSectionIndex];
-  const nextSection = matches
-    .slice(currentSectionIndex + 1)
-    .find((match) => match.start > currentSection.start);
-
-  return text.slice(currentSection.start, nextSection?.start).trim();
+  return sections;
 }
