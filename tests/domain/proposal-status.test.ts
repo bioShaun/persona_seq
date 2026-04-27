@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertTransitionAllowed,
   getNextActionsForRole,
-} from "../../lib/domain/proposal-status";
+} from "@/lib/domain/proposal-status";
 
 describe("proposal status transitions", () => {
   it("allows the first proposal round to move from drafting to analyst review", () => {
@@ -51,5 +51,34 @@ describe("proposal status transitions", () => {
       "request_customer_clarification",
       "save_draft_edits",
     ]);
+  });
+
+  it("returns no PM or analyst actions for accepted", () => {
+    expect(getNextActionsForRole("accepted", "pm")).toEqual([]);
+    expect(getNextActionsForRole("accepted", "analyst")).toEqual([]);
+  });
+
+  it("returns no PM or analyst actions for canceled", () => {
+    expect(getNextActionsForRole("canceled", "pm")).toEqual([]);
+    expect(getNextActionsForRole("canceled", "analyst")).toEqual([]);
+  });
+
+  it("blocks PM from moving analyst_review to ready_to_send", () => {
+    expect(() =>
+      assertTransitionAllowed("analyst_review", "ready_to_send", "pm"),
+    ).toThrow("Transition analyst_review -> ready_to_send is not allowed for pm");
+  });
+
+  it("allows system to move revision_needed back to analyst_review", () => {
+    expect(() =>
+      assertTransitionAllowed("revision_needed", "analyst_review", "system"),
+    ).not.toThrow();
+  });
+
+  it("does not grant admin implicit workflow permissions", () => {
+    expect(() =>
+      assertTransitionAllowed("drafting", "analyst_review", "admin"),
+    ).toThrow("Transition drafting -> analyst_review is not allowed for admin");
+    expect(getNextActionsForRole("drafting", "admin")).toEqual([]);
   });
 });
