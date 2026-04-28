@@ -9,4 +9,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "."),
     },
   },
+  test: {
+    include: ["tests/**/*.test.ts", "smoke.test.ts"],
+    exclude: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/.worktrees/**",
+      "**/worktrees/**",
+    ],
+  },
 });
