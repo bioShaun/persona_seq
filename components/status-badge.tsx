@@ -52,5 +52,14 @@ type StatusBadgeProps = {
 export function StatusBadge({ status }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status];
 
-  return <Badge className={config.className}>{config.label}</Badge>;
+  return (
+    <Badge
+      className={
+        config?.className ??
+        "border-slate-600 bg-slate-800/90 text-slate-200 ring-1 ring-inset ring-slate-500/40"
+      }
+    >
+      {config?.label ?? String(status)}
+    </Badge>
+  );
 }

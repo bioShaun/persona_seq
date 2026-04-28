@@ -58,7 +58,8 @@ export async function confirmCurrentRevision(formData: FormData) {
     ...input,
     actorUserId: currentUser.id,
   });
-  revalidatePath(`/cases/${input.proposalCaseId}`);
+  // Full navigation clears RSC/cache for this segment; revalidate alone can leave stale client state after mutate.
+  redirect(`/cases/${input.proposalCaseId}`);
 }
 
 export async function sendCurrentRevision(formData: FormData) {
