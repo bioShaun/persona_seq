@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, RefreshCcw } from "lucide-react";
-import { GenerationStatus } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
+/** Mirrors Prisma `GenerationStatus` — do not import `@prisma/client` in Client Components (breaks browser bundle). */
+type GenerationStatusValue = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED";
+
 type GenerationStatusPanelProps = {
   proposalCaseId: string;
-  generationStatus: GenerationStatus;
+  generationStatus: GenerationStatusValue;
   generationError: string | null;
 };
 
-const POLL_INTERVAL_MS = 4000;
+/** 低频轮询，避免与同页的 Server Action（如分析师确认提交）争抢 router.refresh */
+const POLL_INTERVAL_MS = 12_000;
 
 export function GenerationStatusPanel({
   proposalCaseId,
@@ -50,7 +53,7 @@ export function GenerationStatusPanel({
   }, [proposalCaseId, refreshPage]);
 
   useEffect(() => {
-    if (generationStatus !== GenerationStatus.PENDING || startedRef.current) {
+    if (generationStatus !== "PENDING" || startedRef.current) {
       return;
     }
     startedRef.current = true;
@@ -58,39 +61,42 @@ export function GenerationStatusPanel({
   }, [generationStatus, triggerGeneration]);
 
   useEffect(() => {
-    if (
-      generationStatus !== GenerationStatus.PENDING &&
-      generationStatus !== GenerationStatus.RUNNING
-    ) {
+    if (generationStatus !== "PENDING" && generationStatus !== "RUNNING") {
       return;
     }
 
-    const timer = window.setInterval(() => {
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
       refreshPage();
-    }, POLL_INTERVAL_MS);
+    };
+
+    const timer = window.setInterval(tick, POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", tick);
 
     return () => {
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
     };
   }, [generationStatus, refreshPage]);
 
-  const canRetry = generationStatus === GenerationStatus.FAILED && !isPending;
+  const canRetry = generationStatus === "FAILED" && !isPending;
 
   return (
     <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/60 p-4">
       <div className="flex items-start gap-3">
-        {(generationStatus === GenerationStatus.PENDING ||
-          generationStatus === GenerationStatus.RUNNING) && (
+        {(generationStatus === "PENDING" || generationStatus === "RUNNING") && (
           <Loader2 className="mt-0.5 size-4 animate-spin text-cyan-300" aria-hidden />
         )}
         <div className="space-y-1 text-sm">
           <p className="font-medium text-slate-100">
-            {generationStatus === GenerationStatus.FAILED
+            {generationStatus === "FAILED"
               ? "AI 生成失败"
               : "AI 正在生成草稿，通常需要 1-2 分钟"}
           </p>
           <p className="text-slate-300">
-            {generationStatus === GenerationStatus.FAILED
+            {generationStatus === "FAILED"
               ? generationError?.trim() || "请检查 AI 配置后重试。"
               : "你可以离开此页面，系统会持续生成。"}
           </p>
@@ -98,7 +104,7 @@ export function GenerationStatusPanel({
         </div>
       </div>
 
-      {generationStatus === GenerationStatus.FAILED ? (
+      {generationStatus === "FAILED" ? (
         <Button
           type="button"
           onClick={() => void triggerGeneration()}
