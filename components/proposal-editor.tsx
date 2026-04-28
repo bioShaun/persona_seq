@@ -1,7 +1,7 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useFormStatus } from "react-dom";
 import { confirmCurrentRevision } from "@/app/(app)/cases/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,35 +13,25 @@ type ProposalEditorProps = {
   initialText: string;
 };
 
-function ConfirmSubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button
-      type="submit"
-      disabled={pending}
-      aria-disabled={pending}
-      className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-          保存确认中...
-        </>
-      ) : (
-        "确认当前方案"
-      )}
-    </Button>
-  );
-}
-
 export function ProposalEditor({
   proposalCaseId,
   revisionId,
   initialText,
 }: ProposalEditorProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   return (
-    <form action={confirmCurrentRevision} className="space-y-4">
+    <form
+      className="space-y-4"
+      action={async (formData) => {
+        setIsSubmitting(true);
+        try {
+          await confirmCurrentRevision(formData);
+        } finally {
+          setIsSubmitting(false);
+        }
+      }}
+    >
       <input type="hidden" name="proposalCaseId" value={proposalCaseId} />
       <input type="hidden" name="revisionId" value={revisionId} />
 
@@ -59,7 +49,21 @@ export function ProposalEditor({
       </div>
 
       <div className="flex items-center justify-end">
-        <ConfirmSubmitButton />
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          aria-disabled={isSubmitting}
+          className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+              保存确认中...
+            </>
+          ) : (
+            "确认当前方案"
+          )}
+        </Button>
       </div>
     </form>
   );

@@ -28,6 +28,13 @@ enum FinalOutcome {
   CANCELED @map("canceled")
 }
 
+enum GenerationStatus {
+  PENDING   @map("pending")
+  RUNNING   @map("running")
+  SUCCEEDED @map("succeeded")
+  FAILED    @map("failed")
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -49,6 +56,11 @@ model ProposalCase {
   requirementSummary    String?
   missingInformation    String?
   status                ProposalStatus @default(DRAFTING)
+  generationStatus      GenerationStatus @default(PENDING)
+  generationError       String?
+  generationAttemptCount Int             @default(0)
+  generationStartedAt   DateTime?
+  generationFinishedAt  DateTime?
   currentRevisionNumber Int            @default(1)
   finalOutcome          FinalOutcome?
   createdAt             DateTime       @default(now())

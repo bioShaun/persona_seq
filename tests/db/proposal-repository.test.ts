@@ -6,6 +6,7 @@ import {
   assertCaseReadyForInitialGeneration,
   assertCaseReadyToSend,
   assertCaseWaitingCustomerFeedback,
+  isStaleRunningGeneration,
   assertRevisionBelongsToCase,
   assertRevisionConfirmedBeforeSending,
   assertRevisionNotAlreadyConfirmed,
@@ -149,5 +150,17 @@ describe("proposal repository invariants", () => {
         createRevision({ revisionNumber: 1 }),
       ),
     ).toThrowError("Current revision mismatch while creating a new revision");
+  });
+
+  it("treats missing or old generation start times as stale", () => {
+    const now = new Date("2026-04-28T02:30:00.000Z");
+
+    expect(isStaleRunningGeneration(null, now)).toBe(true);
+    expect(
+      isStaleRunningGeneration(new Date("2026-04-28T02:20:00.000Z"), now),
+    ).toBe(true);
+    expect(
+      isStaleRunningGeneration(new Date("2026-04-28T02:28:00.000Z"), now),
+    ).toBe(false);
   });
 });

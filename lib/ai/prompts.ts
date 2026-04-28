@@ -24,6 +24,7 @@ export function buildInitialProposalPrompt(input: InitialProposalInput) {
     proposalStructure,
     "",
     "要求: 不要编造客户没有提供的样本数量、物种、测序类型或交付周期；不确定的信息放入需要客户补充确认的问题。",
+    "篇幅要求: 生成可供分析师二次编辑的简洁初稿，尽量控制在 1200-1800 中文字。",
   ].join("\n");
 }
 
@@ -46,5 +47,6 @@ export function buildRevisionProposalPrompt(input: RevisionProposalInput) {
     "C. 仍需客户确认的问题或风险",
     "",
     "要求: 保留上一版仍然有效的内容；明确回应客户反馈；不要让 AI 草稿看起来像已经经过人工最终确认。",
+    "篇幅要求: 输出聚焦改动点的简洁修订稿，避免冗长重复，便于分析师快速确认。",
   ].join("\n");
 }

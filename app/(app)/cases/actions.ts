@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  generateInitialProposalDraft,
   generateRevisionProposalDraft,
 } from "@/lib/ai/generate-proposal";
-import { MockProposalAiProvider } from "@/lib/ai/mock-provider";
+import { errorMessage } from "@/lib/ai/generation-errors";
+import { getProposalAiProvider } from "@/lib/ai/get-proposal-ai-provider";
+import { runInitialDraftGeneration } from "@/lib/ai/run-initial-generation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   assertCaseReadyForFeedbackRevision,
@@ -16,7 +17,6 @@ import {
   markCustomerAccepted,
   markCustomerCanceled,
   markSentToCustomer,
-  updateCaseAfterInitialGeneration,
 } from "@/lib/db/proposal-repository";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -35,17 +35,15 @@ export async function createCaseAndGenerateDraft(formData: FormData) {
     ...input,
     pmUserId: currentUser.id,
   });
-  const provider = new MockProposalAiProvider();
-  const draft = await generateInitialProposalDraft(provider, {
-    originalRequestText: input.originalRequestText,
-  });
 
-  await updateCaseAfterInitialGeneration({
+  void runInitialDraftGeneration({
     proposalCaseId: proposalCase.id,
-    requirementSummary: draft.requirementSummary,
-    missingInformation: draft.missingInformation,
-    aiDraft: draft.proposalDraft,
     actorUserId: currentUser.id,
+  }).catch((error: unknown) => {
+    console.error(
+      "Initial generation background task failed:",
+      errorMessage(error, "background generation failed"),
+    );
   });
 
   revalidatePath("/cases");
@@ -129,7 +127,7 @@ export async function createRevisionFromFeedback(formData: FormData) {
   assertCaseReadyForFeedbackRevision(proposalCase, previousRevision);
   const previousConfirmedProposal = previousRevision.analystConfirmedText as string;
 
-  const provider = new MockProposalAiProvider();
+  const provider = getProposalAiProvider();
   const draft = await generateRevisionProposalDraft(provider, {
     originalRequestText: proposalCase.originalRequestText,
     previousConfirmedProposal,
