@@ -1,4 +1,4 @@
-import { ProposalStatus } from "@prisma/client";
+import { GenerationStatus, ProposalStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import {
   createRevisionFromFeedback,
@@ -6,6 +6,7 @@ import {
   markCanceledAction,
   sendCurrentRevision,
 } from "@/app/(app)/cases/actions";
+import { GenerationStatusPanel } from "@/components/generation-status-panel";
 import { ProposalEditor } from "@/components/proposal-editor";
 import { RevisionTimeline } from "@/components/revision-timeline";
 import { SimilarCasesPanel } from "@/components/similar-cases-panel";
@@ -36,10 +37,16 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       (revision) => revision.revisionNumber === proposalCase.currentRevisionNumber,
     ) ?? proposalCase.revisions.at(-1);
 
-  const similarCases = await findSimilarAcceptedCases({
-    originalRequestText: proposalCase.originalRequestText,
-    requirementSummary: proposalCase.requirementSummary,
-  });
+  const initialDraftWorkflowReady =
+    proposalCase.generationStatus === GenerationStatus.SUCCEEDED ||
+    proposalCase.status !== ProposalStatus.DRAFTING ||
+    proposalCase.revisions.length > 0;
+  const similarCases = initialDraftWorkflowReady
+    ? await findSimilarAcceptedCases({
+        originalRequestText: proposalCase.originalRequestText,
+        requirementSummary: proposalCase.requirementSummary,
+      })
+    : [];
   const canSendCurrentRevision = proposalCase.status === ProposalStatus.READY_TO_SEND;
   const canProcessCustomerFeedback =
     proposalCase.status === ProposalStatus.WAITING_CUSTOMER_FEEDBACK;
@@ -70,6 +77,14 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             <CardTitle>客户上下文</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!initialDraftWorkflowReady ? (
+              <GenerationStatusPanel
+                proposalCaseId={proposalCase.id}
+                generationStatus={proposalCase.generationStatus}
+                generationError={proposalCase.generationError}
+              />
+            ) : null}
+
             <section className="space-y-2">
               <h2 className="text-sm font-medium text-slate-200">客户原始需求</h2>
               <p className="whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300">
@@ -105,7 +120,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             <CardTitle>分析师方案确认</CardTitle>
           </CardHeader>
           <CardContent>
-            {currentRevision ? (
+            {initialDraftWorkflowReady && currentRevision ? (
               <ProposalEditor
                 proposalCaseId={proposalCase.id}
                 revisionId={currentRevision.id}
@@ -115,7 +130,9 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
               />
             ) : (
               <p className="rounded-md border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-400">
-                当前没有可编辑的修订草稿。
+                {initialDraftWorkflowReady
+                  ? "当前没有可编辑的修订草稿。"
+                  : "草稿尚未生成完成，生成结束后可在此编辑确认。"}
               </p>
             )}
           </CardContent>
@@ -124,7 +141,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
         <SimilarCasesPanel cases={similarCases} />
       </div>
 
-      {currentRevision?.analystConfirmedText?.trim() ? (
+      {initialDraftWorkflowReady && currentRevision?.analystConfirmedText?.trim() ? (
         <Card className="border-slate-700 bg-slate-950/70 text-slate-100">
           <CardHeader>
             <CardTitle>PM 客户反馈操作</CardTitle>

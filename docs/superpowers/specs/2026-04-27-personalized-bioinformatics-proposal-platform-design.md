@@ -389,4 +389,3 @@ The MVP is successful if:
 5. Template library for standard bioinformatics proposal types.
 6. Multiple AI model support, allowing several models or prompt strategies to generate proposal variants in parallel for analyst comparison and selection.
 7. Dashboards for turnaround time, revision count, analyst workload, proposal acceptance rate, model usage, and draft selection outcomes.
-

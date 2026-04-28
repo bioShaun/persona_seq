@@ -1,5 +1,6 @@
 import {
   FinalOutcome,
+  GenerationStatus,
   ProposalStatus,
   type ProposalCase,
   type Revision,
@@ -199,6 +200,7 @@ export async function createProposalCase(input: CreateProposalCaseInput) {
         pmUserId: input.pmUserId,
         analystUserId: input.analystUserId ?? null,
         status: ProposalStatus.DRAFTING,
+        generationStatus: GenerationStatus.PENDING,
       },
     });
 
@@ -215,6 +217,128 @@ export async function createProposalCase(input: CreateProposalCaseInput) {
   });
 }
 
+type StartInitialGenerationInput = {
+  proposalCaseId: string;
+  actorUserId: string;
+};
+
+type InitialGenerationStartResult =
+  | {
+      kind: "started";
+      proposalCaseId: string;
+      originalRequestText: string;
+    }
+  | { kind: "running" }
+  | {
+      kind: "noop";
+      reason: "generation_already_succeeded" | "workflow_advanced";
+    };
+
+type FailInitialGenerationInput = {
+  proposalCaseId: string;
+  actorUserId: string;
+  errorMessage: string;
+};
+
+const STALE_RUNNING_GENERATION_MS = 5 * 60 * 1000;
+
+export function isStaleRunningGeneration(
+  generationStartedAt: Date | null,
+  now = new Date(),
+) {
+  if (!generationStartedAt) return true;
+  return now.getTime() - generationStartedAt.getTime() > STALE_RUNNING_GENERATION_MS;
+}
+
+export async function startInitialDraftGeneration(
+  input: StartInitialGenerationInput,
+): Promise<InitialGenerationStartResult> {
+  return prisma.$transaction(async (tx) => {
+    const now = new Date();
+    const proposalCase = await tx.proposalCase.findUnique({
+      where: { id: input.proposalCaseId },
+      select: {
+        id: true,
+        status: true,
+        generationStatus: true,
+        generationStartedAt: true,
+        originalRequestText: true,
+      },
+    });
+
+    if (!proposalCase) {
+      throw new Error("Proposal case was not found");
+    }
+    if (proposalCase.generationStatus === GenerationStatus.SUCCEEDED) {
+      return {
+        kind: "noop",
+        reason: "generation_already_succeeded",
+      };
+    }
+    if (
+      proposalCase.generationStatus === GenerationStatus.RUNNING &&
+      !isStaleRunningGeneration(proposalCase.generationStartedAt, now)
+    ) {
+      return { kind: "running" };
+    }
+    if (proposalCase.status !== ProposalStatus.DRAFTING) {
+      return { kind: "noop", reason: "workflow_advanced" };
+    }
+    if (
+      proposalCase.generationStatus !== GenerationStatus.PENDING &&
+      proposalCase.generationStatus !== GenerationStatus.FAILED &&
+      proposalCase.generationStatus !== GenerationStatus.RUNNING
+    ) {
+      throw new Error("Initial generation has already started");
+    }
+
+    const staleBefore = new Date(now.getTime() - STALE_RUNNING_GENERATION_MS);
+    const updateResult = await tx.proposalCase.updateMany({
+      where: {
+        id: input.proposalCaseId,
+        status: ProposalStatus.DRAFTING,
+        OR: [
+          { generationStatus: GenerationStatus.PENDING },
+          { generationStatus: GenerationStatus.FAILED },
+          {
+            generationStatus: GenerationStatus.RUNNING,
+            OR: [
+              { generationStartedAt: null },
+              { generationStartedAt: { lt: staleBefore } },
+            ],
+          },
+        ],
+      },
+      data: {
+        generationStatus: GenerationStatus.RUNNING,
+        generationError: null,
+        generationStartedAt: now,
+        generationFinishedAt: null,
+        generationAttemptCount: { increment: 1 },
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      return { kind: "running" };
+    }
+
+    await tx.auditLog.create({
+      data: {
+        proposalCaseId: input.proposalCaseId,
+        actorUserId: input.actorUserId,
+        action: "start_initial_generation",
+        afterStatus: ProposalStatus.DRAFTING,
+      },
+    });
+
+    return {
+      kind: "started",
+      proposalCaseId: proposalCase.id,
+      originalRequestText: proposalCase.originalRequestText,
+    };
+  });
+}
+
 export async function updateCaseAfterInitialGeneration(
   input: UpdateCaseAfterInitialGenerationInput,
 ) {
@@ -224,6 +348,7 @@ export async function updateCaseAfterInitialGeneration(
       select: {
         id: true,
         status: true,
+        generationStatus: true,
         currentRevisionNumber: true,
         finalOutcome: true,
       },
@@ -238,6 +363,7 @@ export async function updateCaseAfterInitialGeneration(
       where: {
         id: input.proposalCaseId,
         status: ProposalStatus.DRAFTING,
+        generationStatus: GenerationStatus.RUNNING,
         currentRevisionNumber: 1,
         finalOutcome: null,
       },
@@ -245,6 +371,9 @@ export async function updateCaseAfterInitialGeneration(
         requirementSummary: input.requirementSummary,
         missingInformation: input.missingInformation,
         status: ProposalStatus.ANALYST_REVIEW,
+        generationStatus: GenerationStatus.SUCCEEDED,
+        generationError: null,
+        generationFinishedAt: new Date(),
       },
     });
 
@@ -273,6 +402,41 @@ export async function updateCaseAfterInitialGeneration(
 
     return tx.proposalCase.findUniqueOrThrow({
       where: { id: input.proposalCaseId },
+    });
+  });
+}
+
+export async function markInitialGenerationFailed(
+  input: FailInitialGenerationInput,
+) {
+  return prisma.$transaction(async (tx) => {
+    const updateResult = await tx.proposalCase.updateMany({
+      where: {
+        id: input.proposalCaseId,
+        status: ProposalStatus.DRAFTING,
+        generationStatus: GenerationStatus.RUNNING,
+      },
+      data: {
+        generationStatus: GenerationStatus.FAILED,
+        generationError: input.errorMessage,
+        generationFinishedAt: new Date(),
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      return;
+    }
+
+    await tx.auditLog.create({
+      data: {
+        proposalCaseId: input.proposalCaseId,
+        actorUserId: input.actorUserId,
+        action: "initial_generation_failed",
+        afterStatus: ProposalStatus.DRAFTING,
+        metadata: {
+          message: input.errorMessage,
+        },
+      },
     });
   });
 }

@@ -85,8 +85,8 @@ export default function NewCasePage() {
 
             <div className="flex flex-wrap items-center justify-end gap-3">
               <SubmitButton
-                idleText="创建并生成草稿"
-                pendingText="生成中..."
+                idleText="创建案例"
+                pendingText="创建中..."
                 className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70"
               />
             </div>

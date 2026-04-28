@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mirror.gcr.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: persona_seq
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d persona_seq"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_IMAGE: mirror.gcr.io/library/node:22-bookworm-slim
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/persona_seq?schema=public
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      NEXTAUTH_SECRET: local-docker-secret-change-me
+      NEXTAUTH_URL: http://localhost:3000
+      # mock | openai（openai 需设置 AI_API_KEY，可选 AI_BASE_URL / AI_MODEL）
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-120000}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-2200}
+      AI_TEMPERATURE: ${AI_TEMPERATURE:-0.35}
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
