@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PM      @map("pm")
+  ANALYST @map("analyst")
+  ADMIN   @map("admin")
+}
+
+enum ProposalStatus {
+  DRAFTING                  @map("drafting")
+  ANALYST_REVIEW            @map("analyst_review")
+  READY_TO_SEND             @map("ready_to_send")
+  WAITING_CUSTOMER_FEEDBACK @map("waiting_customer_feedback")
+  REVISION_NEEDED           @map("revision_needed")
+  ACCEPTED                  @map("accepted")
+  CANCELED                  @map("canceled")
+}
+
+enum FinalOutcome {
+  ACCEPTED @map("accepted")
+  CANCELED @map("canceled")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pmCases      ProposalCase[] @relation("PmCases")
+  analystCases ProposalCase[] @relation("AnalystCases")
+  auditLogs    AuditLog[]
+}
+
+model ProposalCase {
+  id                    String         @id @default(cuid())
+  title                 String
+  customerName          String
+  originalRequestText   String
+  requirementSummary    String?
+  missingInformation    String?
+  status                ProposalStatus @default(DRAFTING)
+  currentRevisionNumber Int            @default(1)
+  finalOutcome          FinalOutcome?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  pmUserId      String
+  pmUser        User    @relation("PmCases", fields: [pmUserId], references: [id], onDelete: Restrict)
+  analystUserId String?
+  analystUser   User?   @relation("AnalystCases", fields: [analystUserId], references: [id], onDelete: SetNull)
+
+  revisions Revision[]
+  auditLogs AuditLog[]
+
+  @@index([status])
+  @@index([pmUserId])
+  @@index([analystUserId])
+  @@index([updatedAt])
+}
+
+model Revision {
+  id                    String   @id @default(cuid())
+  proposalCaseId        String
+  revisionNumber        Int
+  customerFeedbackText  String?
+  aiDraft               String
+  analystConfirmedText  String?
+  revisionNotes         String?
+  sentToCustomerAt      DateTime?
+  confirmedByAnalystAt  DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  proposalCase ProposalCase @relation(fields: [proposalCaseId], references: [id], onDelete: Cascade)
+  auditLogs    AuditLog[]
+
+  @@unique([proposalCaseId, revisionNumber])
+  @@index([proposalCaseId])
+}
+
+model AuditLog {
+  id             String          @id @default(cuid())
+  proposalCaseId String
+  revisionId     String?
+  actorUserId    String
+  action         String
+  beforeStatus   ProposalStatus?
+  afterStatus    ProposalStatus?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  proposalCase ProposalCase @relation(fields: [proposalCaseId], references: [id], onDelete: Cascade)
+  revision     Revision?    @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  actor        User         @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([proposalCaseId])
+  @@index([actorUserId])
+  @@index([createdAt])
+}

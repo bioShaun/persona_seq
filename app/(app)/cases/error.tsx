@@ -1,0 +1,47 @@
+"use client";
+
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+type CasesErrorProps = {
+  error: Error & { digest?: string };
+  reset: () => void;
+};
+
+export default function CasesError({ error, reset }: CasesErrorProps) {
+  return (
+    <section className="space-y-6">
+      <Card className="border-rose-800/60 bg-slate-950/80 text-slate-100">
+        <CardHeader className="space-y-2">
+          <CardTitle className="flex items-center gap-2 text-rose-200">
+            <AlertTriangle className="size-5" aria-hidden />
+            案例列表加载失败
+          </CardTitle>
+          <CardDescription className="text-slate-300">
+            可能是本地数据库初始化、登录态或网络依赖异常，请先检查环境后重试。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="rounded-md border border-slate-800 bg-slate-900/80 p-3 text-xs text-slate-400">
+            {error.message || "未知错误，请稍后重试。"}
+          </p>
+          <Button
+            type="button"
+            onClick={reset}
+            className="bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+          >
+            <RefreshCw className="mr-2 size-4" aria-hidden />
+            重新加载
+          </Button>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
