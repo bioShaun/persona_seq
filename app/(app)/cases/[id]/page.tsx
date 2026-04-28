@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getProposalCaseDetail } from "@/lib/db/proposal-repository";
-import { findSimilarAcceptedCases } from "@/lib/search/similar-cases";
+import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     proposalCase.status !== ProposalStatus.DRAFTING ||
     proposalCase.revisions.length > 0;
   const similarCases = initialDraftWorkflowReady
-    ? await findSimilarAcceptedCases({
+    ? await findSimilarAcceptedCasesSafely({
         originalRequestText: proposalCase.originalRequestText,
         requirementSummary: proposalCase.requirementSummary,
       })

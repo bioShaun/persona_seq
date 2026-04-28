@@ -10,22 +10,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-type CasesErrorProps = {
+type CaseDetailErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
-export default function CasesError({ error, reset }: CasesErrorProps) {
+export default function CaseDetailError({ error, reset }: CaseDetailErrorProps) {
   return (
     <section className="space-y-6">
       <Card className="border-rose-800/60 bg-slate-950/80 text-slate-100">
         <CardHeader className="space-y-2">
           <CardTitle className="flex items-center gap-2 text-rose-200">
             <AlertTriangle className="size-5" aria-hidden />
-            案例页面加载失败
+            案例详情加载失败
           </CardTitle>
           <CardDescription className="text-slate-300">
-            可能是数据库、网络或依赖异常，请检查环境后重试。
+            刷新或操作后页面未能重新渲染。若刚保存过方案，可重试；仍失败请查看终端或容器日志中的完整错误。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

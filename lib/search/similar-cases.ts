@@ -138,3 +138,17 @@ export async function findSimilarAcceptedCases(input: {
     };
   });
 }
+
+/** Never rejects — similar cases are ancillary; failures should not break case detail SSR. */
+export async function findSimilarAcceptedCasesSafely(input: {
+  originalRequestText: string;
+  requirementSummary: string | null;
+  limit?: number;
+}) {
+  try {
+    return await findSimilarAcceptedCases(input);
+  } catch (error: unknown) {
+    console.error("findSimilarAcceptedCases:", error);
+    return [];
+  }
+}

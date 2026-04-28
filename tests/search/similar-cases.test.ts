@@ -13,6 +13,7 @@ vi.mock("@/lib/db/prisma", () => ({
 import {
   buildSimilarCaseSearchText,
   findSimilarAcceptedCases,
+  findSimilarAcceptedCasesSafely,
   extractSimilarCaseSearchTerms,
   normalizeSearchTerm,
 } from "@/lib/search/similar-cases";
@@ -163,5 +164,19 @@ describe("similar case search", () => {
     });
 
     expect(results[0]?.matchedReason).toBe("Matched accepted historical case");
+  });
+
+  it("safely returns empty array when the query fails", async () => {
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
+    findManyMock.mockRejectedValueOnce(new Error("database unavailable"));
+    try {
+      const results = await findSimilarAcceptedCasesSafely({
+        originalRequestText: "alpha beta",
+        requirementSummary: null,
+      });
+      expect(results).toEqual([]);
+    } finally {
+      stderr.mockRestore();
+    }
   });
 });
