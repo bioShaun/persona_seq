@@ -10,3 +10,7 @@ coverage/
 .superpowers/
 .worktrees/
 worktrees/
+
+# generated
+tsconfig.tsbuildinfo
+.pi/
