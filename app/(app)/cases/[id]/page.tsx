@@ -1,4 +1,3 @@
-import { GenerationStatus, ProposalStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import {
   createRevisionFromFeedback,
@@ -17,7 +16,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getProposalCaseDetail } from "@/lib/db/proposal-repository";
-import { canConfirmCurrentRevision } from "@/lib/domain/proposal-ui-state";
+import {
+  canConfirmCurrentRevision,
+  canSendCurrentRevision,
+  canProcessCustomerFeedback,
+  isEditableCase,
+} from "@/lib/domain/proposal-ui-state";
 import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
 import { RegenerateProposalButton } from "./regenerate-proposal-button";
 import { SimilarCasesDrawer } from "./similar-cases-drawer";
@@ -43,8 +47,8 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     ) ?? proposalCase.revisions.at(-1);
 
   const initialDraftWorkflowReady =
-    proposalCase.generationStatus === GenerationStatus.SUCCEEDED ||
-    proposalCase.status !== ProposalStatus.DRAFTING ||
+    proposalCase.generationStatus === "SUCCEEDED" ||
+    proposalCase.status !== "DRAFTING" ||
     proposalCase.revisions.length > 0;
   const similarCases = initialDraftWorkflowReady
     ? await findSimilarAcceptedCasesSafely({
@@ -54,9 +58,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       })
     : [];
   const canConfirmRevision = canConfirmCurrentRevision(proposalCase.status);
-  const canSendCurrentRevision = proposalCase.status === ProposalStatus.READY_TO_SEND;
-  const canProcessCustomerFeedback =
-    proposalCase.status === ProposalStatus.WAITING_CUSTOMER_FEEDBACK;
+
 
   return (
     <section className="flex gap-6">
@@ -77,8 +79,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
           <RegenerateProposalButton
             proposalCaseId={proposalCase.id}
             disabled={
-              proposalCase.status === ProposalStatus.ACCEPTED ||
-              proposalCase.status === ProposalStatus.CANCELED
+              !isEditableCase(proposalCase.status)
             }
           />
         </div>
@@ -93,7 +94,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             </a>
           ) : null}
 
-          {canSendCurrentRevision && currentRevision ? (
+          {canSendCurrentRevision(proposalCase.status) && currentRevision ? (
             <form action={sendCurrentRevision} className="w-full">
               <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
               <input type="hidden" name="revisionId" value={currentRevision.id} />
@@ -105,7 +106,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             </form>
           ) : null}
 
-          {canProcessCustomerFeedback ? (
+          {canProcessCustomerFeedback(proposalCase.status) ? (
             <a
               href="#customer-feedback"
               className={cn(buttonVariants({ variant: "secondary" }), "w-full")}
@@ -220,7 +221,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
               <CardTitle>PM 客户反馈操作</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {canSendCurrentRevision ? (
+              {canSendCurrentRevision(proposalCase.status) ? (
                 <form action={sendCurrentRevision} className="max-w-sm">
                   <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
                   <input type="hidden" name="revisionId" value={currentRevision.id} />
@@ -232,13 +233,13 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                 </form>
               ) : null}
 
-              {canSendCurrentRevision ? (
+              {canSendCurrentRevision(proposalCase.status) ? (
                 <p className="text-xs text-muted-foreground">
                   已确认当前方案，可先标记“已发送客户”，再记录客户反馈结果。
                 </p>
               ) : null}
 
-              {canProcessCustomerFeedback ? (
+              {canProcessCustomerFeedback(proposalCase.status) ? (
                 <>
                   <p className="text-xs text-muted-foreground">
                     当前处于客户反馈阶段，可登记结果或基于反馈生成下一轮草稿。

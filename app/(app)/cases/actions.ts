@@ -7,18 +7,20 @@ import {
 } from "@/lib/ai/generate-proposal";
 import { errorMessage } from "@/lib/ai/generation-errors";
 import { getProposalAiProvider } from "@/lib/ai/get-proposal-ai-provider";
-import { runInitialDraftGeneration } from "@/lib/ai/run-initial-generation";
+import { runInitialDraftGeneration } from "@/lib/generation/initial";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { createRevisionFromCustomerFeedback as buildFeedbackRevision } from "@/lib/domain/proposal-workflow";
 import {
   assertCaseReadyForFeedbackRevision,
   confirmRevision,
   createProposalCase,
-  createRevisionFromCustomerFeedback,
+  loadCaseWithRevision,
+  persistFeedbackRevision,
   markCustomerAccepted,
   markCustomerCanceled,
   markSentToCustomer,
+  updateCaseTitle as updateCaseTitleInRepo,
 } from "@/lib/db/proposal-repository";
-import { prisma } from "@/lib/db/prisma";
 import {
   parseConfirmCurrentRevisionInput,
   parseCreateCaseInput,
@@ -42,10 +44,11 @@ export async function createCaseAndGenerateDraft(formData: FormData) {
     pmUserId: currentUser.id,
   });
 
-  void runInitialDraftGeneration({
-    proposalCaseId: proposalCase.id,
-    actorUserId: currentUser.id,
-  }).catch((error: unknown) => {
+  const provider = getProposalAiProvider();
+  void runInitialDraftGeneration(
+    { proposalCaseId: proposalCase.id, actorUserId: currentUser.id },
+    provider,
+  ).catch((error: unknown) => {
     console.error(
       "Initial generation background task failed:",
       errorMessage(error, "background generation failed"),
@@ -59,10 +62,7 @@ export async function createCaseAndGenerateDraft(formData: FormData) {
 export async function updateCaseTitle(formData: FormData) {
   const input = parseUpdateCaseTitleInput(formData);
 
-  await prisma.proposalCase.update({
-    where: { id: input.proposalCaseId },
-    data: { title: input.title },
-  });
+  await updateCaseTitleInRepo(input.proposalCaseId, input.title);
 
   revalidatePath(`/cases/${input.proposalCaseId}`);
 }
@@ -116,27 +116,7 @@ export async function createRevisionFromFeedback(formData: FormData) {
   const input = parseCreateRevisionFromFeedbackInput(formData);
   const currentUser = await getCurrentUser();
 
-  const proposalCase = await prisma.proposalCase.findUnique({
-    where: { id: input.proposalCaseId },
-    select: {
-      id: true,
-      status: true,
-      currentRevisionNumber: true,
-      finalOutcome: true,
-      originalRequestText: true,
-      revisions: {
-        orderBy: { revisionNumber: "desc" },
-        take: 1,
-        select: {
-          id: true,
-          proposalCaseId: true,
-          revisionNumber: true,
-          analystConfirmedText: true,
-          sentToCustomerAt: true,
-        },
-      },
-    },
-  });
+  const proposalCase = await loadCaseWithRevision(input.proposalCaseId);
 
   if (!proposalCase) {
     throw new Error("Proposal case was not found");
@@ -152,12 +132,17 @@ export async function createRevisionFromFeedback(formData: FormData) {
     customerFeedbackText: input.customerFeedbackText,
   });
 
-  await createRevisionFromCustomerFeedback({
-    proposalCaseId: input.proposalCaseId,
-    actorUserId: currentUser.id,
+  const revisionData = buildFeedbackRevision({
+    currentRevisionNumber: proposalCase.currentRevisionNumber,
     customerFeedbackText: input.customerFeedbackText,
     aiDraft: draft.proposalDraft,
     revisionNotes: draft.revisionNotes ?? null,
+  });
+
+  await persistFeedbackRevision({
+    proposalCaseId: input.proposalCaseId,
+    actorUserId: currentUser.id,
+    revisionData,
   });
 
   revalidatePath(`/cases/${input.proposalCaseId}`);

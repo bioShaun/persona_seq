@@ -1,5 +1,17 @@
-import { ProposalStatus } from "@prisma/client";
+import type { ProposalStatus } from "./proposal-status";
 
 export function canConfirmCurrentRevision(status: ProposalStatus) {
-  return status === ProposalStatus.ANALYST_REVIEW;
+  return status === "ANALYST_REVIEW";
+}
+
+export function canSendCurrentRevision(status: ProposalStatus) {
+  return status === "READY_TO_SEND";
+}
+
+export function canProcessCustomerFeedback(status: ProposalStatus) {
+  return status === "WAITING_CUSTOMER_FEEDBACK";
+}
+
+export function isEditableCase(status: ProposalStatus) {
+  return status !== "ACCEPTED" && status !== "CANCELED";
 }

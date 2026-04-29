@@ -1,4 +1,4 @@
-import { type ProposalStatus } from "@prisma/client";
+import type { ProposalStatus } from "@/lib/domain/proposal-status";
 import { Badge } from "@/components/ui/badge";
 
 const STATUS_CONFIG: Record<

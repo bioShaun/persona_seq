@@ -7,38 +7,38 @@ import {
 describe("proposal status transitions", () => {
   it("allows the first proposal round to move from drafting to analyst review", () => {
     expect(() =>
-      assertTransitionAllowed("drafting", "analyst_review", "system"),
+      assertTransitionAllowed("DRAFTING", "ANALYST_REVIEW", "system"),
     ).not.toThrow();
   });
 
   it("allows analyst confirmation to move a case to ready to send", () => {
     expect(() =>
-      assertTransitionAllowed("analyst_review", "ready_to_send", "analyst"),
+      assertTransitionAllowed("ANALYST_REVIEW", "READY_TO_SEND", "analyst"),
     ).not.toThrow();
   });
 
   it("allows PM to mark sent proposal as waiting for customer feedback", () => {
     expect(() =>
-      assertTransitionAllowed("ready_to_send", "waiting_customer_feedback", "pm"),
+      assertTransitionAllowed("READY_TO_SEND", "WAITING_CUSTOMER_FEEDBACK", "pm"),
     ).not.toThrow();
   });
 
   it("allows customer requested changes to create a revision_needed state", () => {
     expect(() =>
-      assertTransitionAllowed("waiting_customer_feedback", "revision_needed", "pm"),
+      assertTransitionAllowed("WAITING_CUSTOMER_FEEDBACK", "REVISION_NEEDED", "pm"),
     ).not.toThrow();
   });
 
   it("blocks analysts from marking a case accepted", () => {
     expect(() =>
-      assertTransitionAllowed("waiting_customer_feedback", "accepted", "analyst"),
+      assertTransitionAllowed("WAITING_CUSTOMER_FEEDBACK", "ACCEPTED", "analyst"),
     ).toThrow(
-      "Transition waiting_customer_feedback -> accepted is not allowed for analyst",
+      "Transition WAITING_CUSTOMER_FEEDBACK -> ACCEPTED is not allowed for analyst",
     );
   });
 
   it("returns PM next actions for waiting customer feedback", () => {
-    expect(getNextActionsForRole("waiting_customer_feedback", "pm")).toEqual([
+    expect(getNextActionsForRole("WAITING_CUSTOMER_FEEDBACK", "pm")).toEqual([
       "enter_customer_feedback",
       "mark_customer_accepted",
       "mark_customer_canceled",
@@ -46,7 +46,7 @@ describe("proposal status transitions", () => {
   });
 
   it("returns analyst next actions for analyst review", () => {
-    expect(getNextActionsForRole("analyst_review", "analyst")).toEqual([
+    expect(getNextActionsForRole("ANALYST_REVIEW", "analyst")).toEqual([
       "confirm_current_proposal",
       "request_customer_clarification",
       "save_draft_edits",
@@ -54,31 +54,31 @@ describe("proposal status transitions", () => {
   });
 
   it("returns no PM or analyst actions for accepted", () => {
-    expect(getNextActionsForRole("accepted", "pm")).toEqual([]);
-    expect(getNextActionsForRole("accepted", "analyst")).toEqual([]);
+    expect(getNextActionsForRole("ACCEPTED", "pm")).toEqual([]);
+    expect(getNextActionsForRole("ACCEPTED", "analyst")).toEqual([]);
   });
 
   it("returns no PM or analyst actions for canceled", () => {
-    expect(getNextActionsForRole("canceled", "pm")).toEqual([]);
-    expect(getNextActionsForRole("canceled", "analyst")).toEqual([]);
+    expect(getNextActionsForRole("CANCELED", "pm")).toEqual([]);
+    expect(getNextActionsForRole("CANCELED", "analyst")).toEqual([]);
   });
 
   it("blocks PM from moving analyst_review to ready_to_send", () => {
     expect(() =>
-      assertTransitionAllowed("analyst_review", "ready_to_send", "pm"),
-    ).toThrow("Transition analyst_review -> ready_to_send is not allowed for pm");
+      assertTransitionAllowed("ANALYST_REVIEW", "READY_TO_SEND", "pm"),
+    ).toThrow("Transition ANALYST_REVIEW -> READY_TO_SEND is not allowed for pm");
   });
 
   it("allows system to move revision_needed back to analyst_review", () => {
     expect(() =>
-      assertTransitionAllowed("revision_needed", "analyst_review", "system"),
+      assertTransitionAllowed("REVISION_NEEDED", "ANALYST_REVIEW", "system"),
     ).not.toThrow();
   });
 
   it("does not grant admin implicit workflow permissions", () => {
     expect(() =>
-      assertTransitionAllowed("drafting", "analyst_review", "admin"),
-    ).toThrow("Transition drafting -> analyst_review is not allowed for admin");
-    expect(getNextActionsForRole("drafting", "admin")).toEqual([]);
+      assertTransitionAllowed("DRAFTING", "ANALYST_REVIEW", "admin"),
+    ).toThrow("Transition DRAFTING -> ANALYST_REVIEW is not allowed for admin");
+    expect(getNextActionsForRole("DRAFTING", "admin")).toEqual([]);
   });
 });

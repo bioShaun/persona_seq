@@ -6,7 +6,7 @@ import {
   type Revision,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { createRevisionFromCustomerFeedback as buildFeedbackRevision } from "@/lib/domain/proposal-workflow";
+
 
 type CreateProposalCaseInput = {
   title: string;
@@ -43,12 +43,15 @@ type MarkCustomerOutcomeInput = {
   actorUserId: string;
 };
 
-type CreateRevisionFromCustomerFeedbackInput = {
+type PersistFeedbackRevisionInput = {
   proposalCaseId: string;
   actorUserId: string;
-  customerFeedbackText: string;
-  aiDraft: string;
-  revisionNotes: string | null;
+  revisionData: {
+    revisionNumber: number;
+    customerFeedbackText: string;
+    aiDraft: string;
+    revisionNotes: string | null;
+  };
 };
 
 export type ProposalCaseInvariantSnapshot = Pick<
@@ -186,6 +189,37 @@ export async function getProposalCaseDetail(id: string) {
       auditLogs: {
         orderBy: { createdAt: "desc" },
         take: 20,
+      },
+    },
+  });
+}
+
+export async function updateCaseTitle(caseId: string, title: string) {
+  await prisma.proposalCase.update({
+    where: { id: caseId },
+    data: { title },
+  });
+}
+
+export async function loadCaseWithRevision(id: string) {
+  return prisma.proposalCase.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      currentRevisionNumber: true,
+      finalOutcome: true,
+      originalRequestText: true,
+      revisions: {
+        orderBy: { revisionNumber: "desc" },
+        take: 1,
+        select: {
+          id: true,
+          proposalCaseId: true,
+          revisionNumber: true,
+          analystConfirmedText: true,
+          sentToCustomerAt: true,
+        },
       },
     },
   });
@@ -707,8 +741,8 @@ export async function markCustomerCanceled(input: MarkCustomerOutcomeInput) {
   });
 }
 
-export async function createRevisionFromCustomerFeedback(
-  input: CreateRevisionFromCustomerFeedbackInput,
+export async function persistFeedbackRevision(
+  input: PersistFeedbackRevisionInput,
 ) {
   return prisma.$transaction(async (tx) => {
     const proposalCase = await tx.proposalCase.findUnique({
@@ -739,13 +773,6 @@ export async function createRevisionFromCustomerFeedback(
 
     assertCaseReadyForFeedbackRevision(proposalCase, latestRevision);
 
-    const nextRevision = buildFeedbackRevision({
-      currentRevisionNumber: proposalCase.currentRevisionNumber,
-      customerFeedbackText: input.customerFeedbackText,
-      aiDraft: input.aiDraft,
-      revisionNotes: input.revisionNotes,
-    });
-
     const updateResult = await tx.proposalCase.updateMany({
       where: {
         id: input.proposalCaseId,
@@ -755,7 +782,7 @@ export async function createRevisionFromCustomerFeedback(
       },
       data: {
         status: ProposalStatus.ANALYST_REVIEW,
-        currentRevisionNumber: nextRevision.revisionNumber,
+        currentRevisionNumber: input.revisionData.revisionNumber,
       },
     });
 
@@ -766,10 +793,10 @@ export async function createRevisionFromCustomerFeedback(
     const createdRevision = await tx.revision.create({
       data: {
         proposalCaseId: input.proposalCaseId,
-        revisionNumber: nextRevision.revisionNumber,
-        customerFeedbackText: nextRevision.customerFeedbackText,
-        aiDraft: nextRevision.aiDraft,
-        revisionNotes: nextRevision.revisionNotes,
+        revisionNumber: input.revisionData.revisionNumber,
+        customerFeedbackText: input.revisionData.customerFeedbackText,
+        aiDraft: input.revisionData.aiDraft,
+        revisionNotes: input.revisionData.revisionNotes,
       },
     });
 

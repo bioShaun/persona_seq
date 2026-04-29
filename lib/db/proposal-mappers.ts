@@ -6,13 +6,13 @@ import type { ProposalStatus } from "@/lib/domain/proposal-status";
 import type { ProposalCaseSummary } from "@/lib/domain/proposal-types";
 
 const statusMap: Record<PrismaProposalStatus, ProposalStatus> = {
-  DRAFTING: "drafting",
-  ANALYST_REVIEW: "analyst_review",
-  READY_TO_SEND: "ready_to_send",
-  WAITING_CUSTOMER_FEEDBACK: "waiting_customer_feedback",
-  REVISION_NEEDED: "revision_needed",
-  ACCEPTED: "accepted",
-  CANCELED: "canceled",
+  DRAFTING: "DRAFTING",
+  ANALYST_REVIEW: "ANALYST_REVIEW",
+  READY_TO_SEND: "READY_TO_SEND",
+  WAITING_CUSTOMER_FEEDBACK: "WAITING_CUSTOMER_FEEDBACK",
+  REVISION_NEEDED: "REVISION_NEEDED",
+  ACCEPTED: "ACCEPTED",
+  CANCELED: "CANCELED",
 };
 
 export function mapProposalCaseSummary(

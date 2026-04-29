@@ -28,13 +28,13 @@ function createCase(
 
 describe("mapProposalCaseSummary", () => {
   it.each([
-    [ProposalStatus.DRAFTING, "drafting"],
-    [ProposalStatus.ANALYST_REVIEW, "analyst_review"],
-    [ProposalStatus.READY_TO_SEND, "ready_to_send"],
-    [ProposalStatus.WAITING_CUSTOMER_FEEDBACK, "waiting_customer_feedback"],
-    [ProposalStatus.REVISION_NEEDED, "revision_needed"],
-    [ProposalStatus.ACCEPTED, "accepted"],
-    [ProposalStatus.CANCELED, "canceled"],
+    [ProposalStatus.DRAFTING, "DRAFTING"],
+    [ProposalStatus.ANALYST_REVIEW, "ANALYST_REVIEW"],
+    [ProposalStatus.READY_TO_SEND, "READY_TO_SEND"],
+    [ProposalStatus.WAITING_CUSTOMER_FEEDBACK, "WAITING_CUSTOMER_FEEDBACK"],
+    [ProposalStatus.REVISION_NEEDED, "REVISION_NEEDED"],
+    [ProposalStatus.ACCEPTED, "ACCEPTED"],
+    [ProposalStatus.CANCELED, "CANCELED"],
   ] as const)(
     "maps prisma status %s to domain status %s",
     (prismaStatus, domainStatus) => {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FolderOpen } from "lucide-react";
+import type { ProposalStatus } from "@/lib/domain/proposal-status";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -12,15 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-type ProposalStatus =
-  | "DRAFTING"
-  | "ANALYST_REVIEW"
-  | "READY_TO_SEND"
-  | "WAITING_CUSTOMER_FEEDBACK"
-  | "REVISION_NEEDED"
-  | "ACCEPTED"
-  | "CANCELED";
 
 type CaseItem = {
   id: string;
