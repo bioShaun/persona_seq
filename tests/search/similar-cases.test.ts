@@ -37,12 +37,12 @@ describe("similar case search", () => {
     ).toBe("肿瘤样本突变注释");
   });
 
-  it("extracts cjk 2-char ngrams from contiguous text", () => {
+  it("extracts cjk 3-char ngrams from contiguous text", () => {
     const terms = extractSimilarCaseSearchTerms("水稻转录组分析");
 
-    expect(terms).toContain("水稻");
-    expect(terms).toContain("转录");
-    expect(terms).toContain("录组");
+    expect(terms).toContain("水稻转");
+    expect(terms).toContain("转录组");
+    expect(terms).toContain("录组分");
   });
 
   it("lowercases and deduplicates english tokens", () => {

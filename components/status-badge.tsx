@@ -15,27 +15,27 @@ const STATUS_CONFIG: Record<
   },
   ANALYST_REVIEW: {
     label: "待分析确认",
-    className: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    className: "border-amber-500/20 bg-amber-100 text-amber-600",
   },
   READY_TO_SEND: {
     label: "待发送客户",
-    className: "border-sky-500/20 bg-sky-500/10 text-sky-400",
+    className: "border-sky-500/20 bg-sky-100 text-sky-600",
   },
   WAITING_CUSTOMER_FEEDBACK: {
     label: "等待客户反馈",
-    className: "border-indigo-500/20 bg-indigo-500/10 text-indigo-400",
+    className: "border-indigo-500/20 bg-indigo-100 text-indigo-600",
   },
   REVISION_NEEDED: {
     label: "需修订",
-    className: "border-orange-500/20 bg-orange-500/10 text-orange-400",
+    className: "border-orange-500/20 bg-orange-100 text-orange-600",
   },
   ACCEPTED: {
     label: "客户已同意",
-    className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    className: "border-emerald-500/20 bg-emerald-100 text-emerald-600",
   },
   CANCELED: {
     label: "客户已取消",
-    className: "border-rose-500/20 bg-rose-500/10 text-rose-400",
+    className: "border-rose-500/20 bg-rose-100 text-rose-600",
   },
 };
 

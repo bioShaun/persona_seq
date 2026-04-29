@@ -30,13 +30,17 @@ import {
   parseUpdateCaseTitleInput,
 } from "@/app/(app)/cases/action-inputs";
 
+function extractFallbackTitle(text: string): string {
+  const firstLine = text.split(/[\n\r。！？]/)[0].trim();
+  if (firstLine.length <= 40) return firstLine;
+  return firstLine.slice(0, 40) + "…";
+}
+
 export async function createCaseAndGenerateDraft(formData: FormData) {
   const input = parseCreateCaseInput(formData);
   const currentUser = await getCurrentUser();
 
-  const title =
-    input.title ||
-    input.originalRequestText.replace(/\s+/g, "").slice(0, 20) + "…";
+  const title = input.title || extractFallbackTitle(input.originalRequestText);
 
   const proposalCase = await createProposalCase({
     ...input,

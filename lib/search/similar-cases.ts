@@ -19,7 +19,7 @@ export function normalizeSearchTerm(term: string) {
   return term.toLowerCase().replace(/[%_]/g, "").trim();
 }
 
-export function extractSimilarCaseSearchTerms(text: string, limit = 8) {
+export function extractSimilarCaseSearchTerms(text: string, limit = 15) {
   const chunks = text.match(TERM_CHUNK_REGEX) ?? [];
   const seen = new Set<string>();
   const terms: string[] = [];
@@ -36,8 +36,8 @@ export function extractSimilarCaseSearchTerms(text: string, limit = 8) {
     if (CJK_SEQUENCE_REGEX.test(chunk)) {
       if (chunk.length < 2) continue;
 
-      for (let i = 0; i < chunk.length - 1; i += 1) {
-        pushTerm(chunk.slice(i, i + 2));
+      for (let i = 0; i < chunk.length - 2; i += 1) {
+        pushTerm(chunk.slice(i, i + 3));
         if (terms.length >= limit) break;
       }
       continue;
@@ -96,6 +96,7 @@ export async function findSimilarAcceptedCases(input: {
       id: input.excludeCaseId ? { not: input.excludeCaseId } : undefined,
       status: ProposalStatus.ACCEPTED,
       OR: terms.flatMap((term) => [
+        { title: { contains: term, mode: "insensitive" as const } },
         { requirementSummary: { contains: term, mode: "insensitive" as const } },
         { originalRequestText: { contains: term, mode: "insensitive" as const } },
         {
@@ -128,17 +129,27 @@ export async function findSimilarAcceptedCases(input: {
     orderBy: { updatedAt: "desc" },
   });
 
-  return cases.map((caseItem) => {
-    return {
-      ...caseItem,
-      matchedReason: buildMatchedReason({
-        terms,
-        requirementSummary: caseItem.requirementSummary,
-        originalRequestText: caseItem.originalRequestText,
-        latestAnalystConfirmedText: caseItem.revisions[0]?.analystConfirmedText ?? null,
-      }),
-    };
-  });
+  return cases
+    .map((caseItem) => {
+      let score = 0;
+      for (const term of terms) {
+        if (containsTermInsensitive(caseItem.requirementSummary, term)) score += 3;
+        if (containsTermInsensitive(caseItem.originalRequestText, term)) score += 2;
+        if (containsTermInsensitive(caseItem.title, term)) score += 2;
+        if (containsTermInsensitive(caseItem.revisions[0]?.analystConfirmedText, term)) score += 1;
+      }
+      return {
+        ...caseItem,
+        matchedReason: buildMatchedReason({
+          terms,
+          requirementSummary: caseItem.requirementSummary,
+          originalRequestText: caseItem.originalRequestText,
+          latestAnalystConfirmedText: caseItem.revisions[0]?.analystConfirmedText ?? null,
+        }),
+        score,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 /** Never rejects — similar cases are ancillary; failures should not break case detail SSR. */

@@ -63,9 +63,9 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   return (
     <section className="flex gap-6">
       <aside className="w-80 shrink-0 space-y-6 self-start sticky top-6">
-        <div className="space-y-4 rounded-xl border border-border/90 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 shadow-[0_24px_80px_-36px_rgba(34,211,238,0.45)]">
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
-            Precision Proposal Desk
+        <div className="space-y-4 rounded-xl border border-border bg-card p-6">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Case Overview
           </p>
           <TitleEditor
             proposalCaseId={proposalCase.id}

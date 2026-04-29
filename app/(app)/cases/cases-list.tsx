@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Search } from "lucide-react";
 import type { ProposalStatus } from "@/lib/domain/proposal-status";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/status-badge";
+import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type CaseItem = {
   id: string;
@@ -39,23 +41,43 @@ const IN_PROGRESS_STATUSES: ProposalStatus[] = [
 
 const COMPLETED_STATUSES: ProposalStatus[] = ["ACCEPTED", "CANCELED"];
 
-function filterCases(cases: CaseItem[], filter: string) {
-  if (filter === "all") return cases;
+function filterCases(cases: CaseItem[], filter: string, search: string) {
+  let result = cases;
   if (filter === "drafting")
-    return cases.filter((c) => c.status === "DRAFTING");
-  if (filter === "in_progress")
-    return cases.filter((c) => IN_PROGRESS_STATUSES.includes(c.status));
-  if (filter === "completed")
-    return cases.filter((c) => COMPLETED_STATUSES.includes(c.status));
-  return cases;
+    result = result.filter((c) => c.status === "DRAFTING");
+  else if (filter === "in_progress")
+    result = result.filter((c) => IN_PROGRESS_STATUSES.includes(c.status));
+  else if (filter === "completed")
+    result = result.filter((c) => COMPLETED_STATUSES.includes(c.status));
+
+  const q = search.trim().toLowerCase();
+  if (q) {
+    result = result.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.customerName.toLowerCase().includes(q)
+    );
+  }
+  return result;
 }
 
 export function CasesList({ cases }: { cases: CaseItem[] }) {
   const [activeFilter, setActiveFilter] = useState<string>("all");
-  const filtered = filterCases(cases, activeFilter);
+  const [search, setSearch] = useState("");
+  const filtered = filterCases(cases, activeFilter, search);
 
   return (
     <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="搜索案例名称或客户…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {TABS.map((tab) => (
           <button
@@ -79,31 +101,51 @@ export function CasesList({ cases }: { cases: CaseItem[] }) {
           <p className="text-sm text-muted-foreground">暂无案例</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => (
-            <Link
-              key={c.id}
-              href={`/cases/${c.id}`}
-              className="group block outline-none"
-            >
-              <Card className="border border-transparent hover:-translate-y-0.5 hover:border-border/40 transition-all duration-200">
-                <CardHeader>
-                  <CardTitle className="text-base leading-snug">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>案例标题</TableHead>
+              <TableHead>客户名称</TableHead>
+              <TableHead>状态</TableHead>
+              <TableHead>轮次</TableHead>
+              <TableHead>更新时间</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((c) => (
+              <TableRow
+                key={c.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <TableCell>
+                  <Link href={`/cases/${c.id}`} className="block">
                     {c.title}
-                  </CardTitle>
-                  <CardDescription>{c.customerName}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <StatusBadge status={c.status} />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>第 {c.currentRevisionNumber} 轮</span>
-                    <span>{c.updatedAt}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/cases/${c.id}`} className="block">
+                    {c.customerName}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/cases/${c.id}`} className="block">
+                    <StatusBadge status={c.status} />
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/cases/${c.id}`} className="block">
+                    第 {c.currentRevisionNumber} 轮
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link href={`/cases/${c.id}`} className="block">
+                    {c.updatedAt}
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );
