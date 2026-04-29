@@ -9,10 +9,10 @@ import {
 import { GenerationStatusPanel } from "@/components/generation-status-panel";
 import { ProposalEditor } from "@/components/proposal-editor";
 import { RevisionTimeline } from "@/components/revision-timeline";
-import { SimilarCasesPanel } from "@/components/similar-cases-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import { getProposalCaseDetail } from "@/lib/db/proposal-repository";
 import { canConfirmCurrentRevision } from "@/lib/domain/proposal-ui-state";
 import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
 import { RegenerateProposalButton } from "./regenerate-proposal-button";
+import { SimilarCasesDrawer } from "./similar-cases-drawer";
 import { TitleEditor } from "./title-editor";
 
 export const dynamic = "force-dynamic";
@@ -58,80 +59,123 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     proposalCase.status === ProposalStatus.WAITING_CUSTOMER_FEEDBACK;
 
   return (
-    <section className="space-y-6">
-      <header className="rounded-xl border border-border/90 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 shadow-[0_24px_80px_-36px_rgba(34,211,238,0.45)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
-              Precision Proposal Desk
-            </p>
-            <TitleEditor
-              proposalCaseId={proposalCase.id}
-              initialTitle={proposalCase.title}
-            />
-            <p className="text-sm text-muted-foreground">
-              客户：{proposalCase.customerName} · 当前轮次：第{" "}
-              {proposalCase.currentRevisionNumber} 轮
-            </p>
+    <section className="flex gap-6">
+      <aside className="w-80 shrink-0 space-y-6 self-start sticky top-6">
+        <div className="space-y-4 rounded-xl border border-border/90 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 shadow-[0_24px_80px_-36px_rgba(34,211,238,0.45)]">
+          <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
+            Precision Proposal Desk
+          </p>
+          <TitleEditor
+            proposalCaseId={proposalCase.id}
+            initialTitle={proposalCase.title}
+          />
+          <div className="space-y-1 text-sm text-muted-foreground">
+            <p>客户：{proposalCase.customerName}</p>
+            <p>当前轮次：第 {proposalCase.currentRevisionNumber} 轮</p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <StatusBadge status={proposalCase.status} />
-            <RegenerateProposalButton
-              proposalCaseId={proposalCase.id}
-              disabled={
-                proposalCase.status === ProposalStatus.ACCEPTED ||
-                proposalCase.status === ProposalStatus.CANCELED
-              }
-            />
-          </div>
+          <StatusBadge status={proposalCase.status} />
+          <RegenerateProposalButton
+            proposalCaseId={proposalCase.id}
+            disabled={
+              proposalCase.status === ProposalStatus.ACCEPTED ||
+              proposalCase.status === ProposalStatus.CANCELED
+            }
+          />
         </div>
-      </header>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_1.4fr_1fr]">
-        <Card className="border-border bg-card text-card-foreground">
-          <CardHeader>
-            <CardTitle>客户上下文</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!initialDraftWorkflowReady ? (
-              <GenerationStatusPanel
-                proposalCaseId={proposalCase.id}
-                generationStatus={proposalCase.generationStatus}
-                generationError={proposalCase.generationError}
+        <div className="space-y-3">
+          {canConfirmRevision ? (
+            <a
+              href="#proposal-editor"
+              className={cn(buttonVariants({ variant: "default" }), "w-full")}
+            >
+              确认方案
+            </a>
+          ) : null}
+
+          {canSendCurrentRevision && currentRevision ? (
+            <form action={sendCurrentRevision} className="w-full">
+              <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+              <input type="hidden" name="revisionId" value={currentRevision.id} />
+              <SubmitButton
+                idleText="发送客户"
+                pendingText="提交中..."
+                className="w-full"
               />
-            ) : null}
+            </form>
+          ) : null}
 
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium text-foreground/80">客户原始需求</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
-                {proposalCase.originalRequestText}
-              </p>
-            </section>
+          {canProcessCustomerFeedback ? (
+            <a
+              href="#customer-feedback"
+              className={cn(buttonVariants({ variant: "secondary" }), "w-full")}
+            >
+              登记反馈
+            </a>
+          ) : null}
+        </div>
+      </aside>
 
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium text-foreground/80">需求摘要</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-foreground/80">
-                {proposalCase.requirementSummary?.trim() || "尚未生成需求摘要。"}
-              </p>
-            </section>
+      <div className="min-w-0 flex-1 space-y-6">
+        <Card className="border-border bg-card text-card-foreground" id="customer-context">
+          <details className="group" open>
+            <summary className="list-none cursor-pointer">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle>客户上下文</CardTitle>
+                <span className="text-xs text-muted-foreground transition-transform duration-200 group-open:rotate-180">
+                  ▼
+                </span>
+              </CardHeader>
+            </summary>
+            <CardContent className="space-y-4">
+              {!initialDraftWorkflowReady ? (
+                <GenerationStatusPanel
+                  proposalCaseId={proposalCase.id}
+                  generationStatus={proposalCase.generationStatus}
+                  generationError={proposalCase.generationError}
+                />
+              ) : null}
 
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium text-foreground/80">缺失信息</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
-                {proposalCase.missingInformation?.trim() || "当前未记录缺失信息。"}
-              </p>
-            </section>
+              <section className="space-y-2">
+                <h2 className="text-sm font-medium text-foreground/80">
+                  客户原始需求
+                </h2>
+                <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
+                  {proposalCase.originalRequestText}
+                </p>
+              </section>
 
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium text-foreground/80">最近客户反馈</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
-                {currentRevision?.customerFeedbackText?.trim() || "暂无客户反馈。"}
-              </p>
-            </section>
-          </CardContent>
+              <section className="space-y-2">
+                <h2 className="text-sm font-medium text-foreground/80">
+                  需求摘要
+                </h2>
+                <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-foreground/80">
+                  {proposalCase.requirementSummary?.trim() || "尚未生成需求摘要。"}
+                </p>
+              </section>
+
+              <section className="space-y-2">
+                <h2 className="text-sm font-medium text-foreground/80">
+                  缺失信息
+                </h2>
+                <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
+                  {proposalCase.missingInformation?.trim() || "当前未记录缺失信息。"}
+                </p>
+              </section>
+
+              <section className="space-y-2">
+                <h2 className="text-sm font-medium text-foreground/80">
+                  最近客户反馈
+                </h2>
+                <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
+                  {currentRevision?.customerFeedbackText?.trim() || "暂无客户反馈。"}
+                </p>
+              </section>
+            </CardContent>
+          </details>
         </Card>
 
-        <Card className="border-border bg-card text-card-foreground">
+        <Card className="border-border bg-card text-card-foreground" id="proposal-editor">
           <CardHeader>
             <CardTitle>分析师方案确认</CardTitle>
           </CardHeader>
@@ -170,91 +214,91 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
           </CardContent>
         </Card>
 
-        <SimilarCasesPanel cases={similarCases} />
+        {initialDraftWorkflowReady && currentRevision?.analystConfirmedText?.trim() ? (
+          <Card className="border-border bg-card text-card-foreground" id="customer-feedback">
+            <CardHeader>
+              <CardTitle>PM 客户反馈操作</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {canSendCurrentRevision ? (
+                <form action={sendCurrentRevision} className="max-w-sm">
+                  <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+                  <input type="hidden" name="revisionId" value={currentRevision.id} />
+                  <SubmitButton
+                    idleText="标记已发送客户"
+                    pendingText="提交中..."
+                    className="w-full border border-border bg-muted text-foreground hover:bg-muted disabled:opacity-70"
+                  />
+                </form>
+              ) : null}
+
+              {canSendCurrentRevision ? (
+                <p className="text-xs text-muted-foreground">
+                  已确认当前方案，可先标记“已发送客户”，再记录客户反馈结果。
+                </p>
+              ) : null}
+
+              {canProcessCustomerFeedback ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    当前处于客户反馈阶段，可登记结果或基于反馈生成下一轮草稿。
+                  </p>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <form action={markAcceptedAction}>
+                      <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+                      <SubmitButton
+                        idleText="客户已同意"
+                        pendingText="提交中..."
+                        className="w-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-70"
+                      />
+                    </form>
+
+                    <form action={markCanceledAction}>
+                      <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+                      <SubmitButton
+                        idleText="客户已取消"
+                        pendingText="提交中..."
+                        className="w-full border border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25 disabled:opacity-70"
+                      />
+                    </form>
+                  </div>
+
+                  <form action={createRevisionFromFeedback} className="space-y-3">
+                    <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+                    <div className="space-y-2">
+                      <Label htmlFor="customer-feedback-text">客户反馈原文</Label>
+                      <Textarea
+                        id="customer-feedback-text"
+                        name="customerFeedbackText"
+                        rows={5}
+                        required
+                        placeholder="粘贴客户反馈、邮件回复或会议纪要关键意见。"
+                        className="border-border bg-muted/90 text-foreground placeholder:text-muted-foreground"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <SubmitButton
+                        idleText="生成下一轮修订草稿"
+                        pendingText="生成中..."
+                        className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
+                      />
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  当前状态暂不需要录入客户反馈，待流程进入反馈阶段后可继续操作。
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <RevisionTimeline revisions={[...proposalCase.revisions].reverse()} />
       </div>
 
-      {initialDraftWorkflowReady && currentRevision?.analystConfirmedText?.trim() ? (
-        <Card className="border-border bg-card text-card-foreground">
-          <CardHeader>
-            <CardTitle>PM 客户反馈操作</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {canSendCurrentRevision ? (
-              <form action={sendCurrentRevision} className="max-w-sm">
-                <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
-                <input type="hidden" name="revisionId" value={currentRevision.id} />
-                <SubmitButton
-                  idleText="标记已发送客户"
-                  pendingText="提交中..."
-                  className="w-full border border-border bg-muted text-foreground hover:bg-muted disabled:opacity-70"
-                />
-              </form>
-            ) : null}
-
-            {canSendCurrentRevision ? (
-              <p className="text-xs text-muted-foreground">
-                已确认当前方案，可先标记“已发送客户”，再记录客户反馈结果。
-              </p>
-            ) : null}
-
-            {canProcessCustomerFeedback ? (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  当前处于客户反馈阶段，可登记结果或基于反馈生成下一轮草稿。
-                </p>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <form action={markAcceptedAction}>
-                    <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
-                    <SubmitButton
-                      idleText="客户已同意"
-                      pendingText="提交中..."
-                      className="w-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-70"
-                    />
-                  </form>
-
-                  <form action={markCanceledAction}>
-                    <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
-                    <SubmitButton
-                      idleText="客户已取消"
-                      pendingText="提交中..."
-                      className="w-full border border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25 disabled:opacity-70"
-                    />
-                  </form>
-                </div>
-
-                <form action={createRevisionFromFeedback} className="space-y-3">
-                  <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
-                  <div className="space-y-2">
-                    <Label htmlFor="customer-feedback-text">客户反馈原文</Label>
-                    <Textarea
-                      id="customer-feedback-text"
-                      name="customerFeedbackText"
-                      rows={5}
-                      required
-                      placeholder="粘贴客户反馈、邮件回复或会议纪要关键意见。"
-                      className="border-border bg-muted/90 text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <SubmitButton
-                      idleText="生成下一轮修订草稿"
-                      pendingText="生成中..."
-                      className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
-                    />
-                  </div>
-                </form>
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                当前状态暂不需要录入客户反馈，待流程进入反馈阶段后可继续操作。
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <RevisionTimeline revisions={[...proposalCase.revisions].reverse()} />
+      <SimilarCasesDrawer cases={similarCases} />
     </section>
   );
 }
