@@ -27,5 +27,9 @@ describe("AI proposal prompts", () => {
     expect(prompt).toContain("客户最新反馈");
     expect(prompt).toContain("WGCNA");
     expect(prompt).toContain("修订说明");
+    expect(prompt).toContain("修订后完整方案草稿");
+    expect(prompt).toContain("不要只输出改动片段");
+    expect(prompt).toContain("1. 客户需求理解");
+    expect(prompt).toContain("7. 需要客户补充确认的问题");
   });
 });

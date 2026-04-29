@@ -35,16 +35,18 @@ export default function NewCasePage() {
         <CardContent>
           <form action={createCaseAndGenerateDraft} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="title">项目标题</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  required
-                  placeholder="例如：肿瘤 panel 检测方案咨询"
-                  className="border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">
+                    项目标题{" "}
+                    <span className="text-xs text-slate-400">（选填，留空让 AI 自动生成）</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    placeholder="留空让 AI 自动生成，或手动填写"
+                    className="border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500"
+                  />
+                </div>
 
               <div className="space-y-2">
                 <Label htmlFor="customerName">客户名称</Label>

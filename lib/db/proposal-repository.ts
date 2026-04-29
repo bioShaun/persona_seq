@@ -22,6 +22,7 @@ type UpdateCaseAfterInitialGenerationInput = {
   missingInformation: string;
   aiDraft: string;
   actorUserId: string;
+  suggestedTitle?: string;
 };
 
 type ConfirmRevisionInput = {
@@ -370,6 +371,7 @@ export async function updateCaseAfterInitialGeneration(
       data: {
         requirementSummary: input.requirementSummary,
         missingInformation: input.missingInformation,
+        ...(input.suggestedTitle ? { title: input.suggestedTitle } : {}),
         status: ProposalStatus.ANALYST_REVIEW,
         generationStatus: GenerationStatus.SUCCEEDED,
         generationError: null,

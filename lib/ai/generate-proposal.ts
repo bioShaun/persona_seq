@@ -12,6 +12,7 @@ export async function generateInitialProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildInitialProposalPrompt(input));
 
+  const suggestedTitle = extractSection(text, "D.");
   return {
     requirementSummary:
       extractSection(text, "A.") ??
@@ -19,6 +20,7 @@ export async function generateInitialProposalDraft(
     missingInformation:
       extractSection(text, "B.") ?? "AI 未识别出缺失信息。",
     proposalDraft: extractSection(text, "C.") ?? text,
+    suggestedTitle: suggestedTitle ?? undefined,
   };
 }
 
@@ -38,20 +40,22 @@ export async function generateRevisionProposalDraft(
 }
 
 function extractSection(text: string, marker: string) {
-  const index = text.indexOf(marker);
-  if (index === -1) return null;
+  const headingRegex = /^\s*(A\.|B\.|C\.)/gm;
+  const headings = [...text.matchAll(headingRegex)].map((match) => ({
+    marker: match[1],
+    index: match.index ?? 0,
+  }));
+  const current = headings.find((heading) => heading.marker === marker);
 
-  const markers = ["A.", "B.", "C."]
-    .map((candidate) => ({ marker: candidate, index: text.indexOf(candidate, index + marker.length) }))
-    .filter((candidate) => candidate.index > index)
-    .sort((a, b) => a.index - b.index);
+  if (!current) return null;
 
-  const dashedLine = text.indexOf("\n---", index + marker.length);
-  let endExclusive: number | undefined = markers[0]?.index;
+  const nextHeading = headings.find((heading) => heading.index > current.index);
+  const dashedLine = text.indexOf("\n---", current.index + marker.length);
+  let endExclusive: number | undefined = nextHeading?.index;
 
   if (typeof endExclusive !== "number" && dashedLine > -1) {
     endExclusive = dashedLine;
   }
 
-  return text.slice(index, endExclusive).trim();
+  return text.slice(current.index, endExclusive).trim();
 }

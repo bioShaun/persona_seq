@@ -13,6 +13,7 @@ export type ProposalDraftResult = {
   missingInformation: string;
   proposalDraft: string;
   revisionNotes?: string;
+  suggestedTitle?: string;
 };
 
 export interface ProposalAiProvider {

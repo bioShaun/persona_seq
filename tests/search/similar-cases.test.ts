@@ -91,6 +91,24 @@ describe("similar case search", () => {
     expect(results[0]?.matchedReason).toBe("Matched requirement summary: alpha");
   });
 
+  it("excludes the current case from similar accepted results", async () => {
+    findManyMock.mockResolvedValueOnce([]);
+
+    await findSimilarAcceptedCases({
+      excludeCaseId: "case-current",
+      originalRequestText: "alpha",
+      requirementSummary: null,
+    });
+
+    expect(findManyMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: { not: "case-current" },
+        }),
+      }),
+    );
+  });
+
   it("derives reason from original request text", async () => {
     findManyMock.mockResolvedValueOnce([
       {

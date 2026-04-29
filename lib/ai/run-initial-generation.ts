@@ -44,6 +44,7 @@ export async function runInitialDraftGeneration(
       missingInformation: draft.missingInformation,
       aiDraft: draft.proposalDraft,
       actorUserId: input.actorUserId,
+      suggestedTitle: draft.suggestedTitle,
     });
 
     revalidatePath("/cases");

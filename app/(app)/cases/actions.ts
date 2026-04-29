@@ -25,14 +25,20 @@ import {
   parseCreateRevisionFromFeedbackInput,
   parseMarkOutcomeInput,
   parseSendCurrentRevisionInput,
+  parseUpdateCaseTitleInput,
 } from "@/app/(app)/cases/action-inputs";
 
 export async function createCaseAndGenerateDraft(formData: FormData) {
   const input = parseCreateCaseInput(formData);
   const currentUser = await getCurrentUser();
 
+  const title =
+    input.title ||
+    input.originalRequestText.replace(/\s+/g, "").slice(0, 20) + "…";
+
   const proposalCase = await createProposalCase({
     ...input,
+    title,
     pmUserId: currentUser.id,
   });
 
@@ -48,6 +54,17 @@ export async function createCaseAndGenerateDraft(formData: FormData) {
 
   revalidatePath("/cases");
   redirect(`/cases/${proposalCase.id}`);
+}
+
+export async function updateCaseTitle(formData: FormData) {
+  const input = parseUpdateCaseTitleInput(formData);
+
+  await prisma.proposalCase.update({
+    where: { id: input.proposalCaseId },
+    data: { title: input.title },
+  });
+
+  revalidatePath(`/cases/${input.proposalCaseId}`);
 }
 
 export async function confirmCurrentRevision(formData: FormData) {

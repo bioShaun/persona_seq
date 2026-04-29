@@ -12,7 +12,10 @@ type OpenAiChatProviderOptions = {
 };
 
 type ChatCompletionsResponse = {
-  choices?: Array<{ message?: { content?: string | null } }>;
+  choices?: Array<{
+    finish_reason?: string | null;
+    message?: { content?: string | null };
+  }>;
   error?: { message?: string };
 };
 
@@ -51,7 +54,14 @@ export class OpenAiChatProposalAiProvider implements ProposalAiProvider {
         throw new Error(`AI 请求失败 (${res.status}): ${msg}`);
       }
 
-      const text = body.choices?.[0]?.message?.content;
+      const choice = body.choices?.[0];
+      if (choice?.finish_reason === "length") {
+        throw new Error(
+          "AI 返回内容被截断，请提高 AI_MAX_TOKENS 后重新生成。",
+        );
+      }
+
+      const text = choice?.message?.content;
       if (typeof text !== "string" || !text.trim()) {
         throw new Error("AI 返回内容为空");
       }

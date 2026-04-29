@@ -7,7 +7,7 @@ import type { ProposalAiProvider } from "@/lib/ai/types";
 const DEFAULT_BASE = "https://api.openai.com/v1";
 const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_TIMEOUT_MS = 120_000;
-const DEFAULT_MAX_TOKENS = 2200;
+const DEFAULT_MAX_TOKENS = 5000;
 const DEFAULT_TEMPERATURE = 0.35;
 
 function parseIntegerOrDefault(raw: string | undefined, defaultValue: number) {

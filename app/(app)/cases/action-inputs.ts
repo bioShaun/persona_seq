@@ -4,7 +4,7 @@ const requiredString = (label: string) =>
   z.string().trim().min(1, `${label} is required`);
 
 const createCaseSchema = z.object({
-  title: requiredString("title"),
+  title: z.string().trim().optional().default(""),
   customerName: requiredString("customerName"),
   originalRequestText: requiredString("originalRequestText"),
   analystUserId: z.string().trim().optional(),
@@ -14,6 +14,11 @@ const confirmCurrentRevisionSchema = z.object({
   proposalCaseId: requiredString("proposalCaseId"),
   revisionId: requiredString("revisionId"),
   analystConfirmedText: requiredString("analystConfirmedText"),
+});
+
+const updateCaseTitleSchema = z.object({
+  proposalCaseId: requiredString("proposalCaseId"),
+  title: requiredString("title"),
 });
 
 const sendCurrentRevisionSchema = z.object({
@@ -56,6 +61,13 @@ export function parseCreateCaseInput(formData: FormData) {
   });
 
   return input;
+}
+
+export function parseUpdateCaseTitleInput(formData: FormData) {
+  return parseFormData(updateCaseTitleSchema, {
+    proposalCaseId: readString(formData, "proposalCaseId"),
+    title: readString(formData, "title"),
+  });
 }
 
 export function parseConfirmCurrentRevisionInput(formData: FormData) {

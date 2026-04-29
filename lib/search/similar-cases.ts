@@ -81,6 +81,7 @@ export function buildMatchedReason(input: {
 }
 
 export async function findSimilarAcceptedCases(input: {
+  excludeCaseId?: string;
   originalRequestText: string;
   requirementSummary: string | null;
   limit?: number;
@@ -92,6 +93,7 @@ export async function findSimilarAcceptedCases(input: {
 
   const cases = await prisma.proposalCase.findMany({
     where: {
+      id: input.excludeCaseId ? { not: input.excludeCaseId } : undefined,
       status: ProposalStatus.ACCEPTED,
       OR: terms.flatMap((term) => [
         { requirementSummary: { contains: term, mode: "insensitive" as const } },
@@ -141,6 +143,7 @@ export async function findSimilarAcceptedCases(input: {
 
 /** Never rejects — similar cases are ancillary; failures should not break case detail SSR. */
 export async function findSimilarAcceptedCasesSafely(input: {
+  excludeCaseId?: string;
   originalRequestText: string;
   requirementSummary: string | null;
   limit?: number;

@@ -12,11 +12,15 @@ import { RevisionTimeline } from "@/components/revision-timeline";
 import { SimilarCasesPanel } from "@/components/similar-cases-panel";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getProposalCaseDetail } from "@/lib/db/proposal-repository";
+import { canConfirmCurrentRevision } from "@/lib/domain/proposal-ui-state";
 import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
+import { RegenerateProposalButton } from "./regenerate-proposal-button";
+import { TitleEditor } from "./title-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +47,12 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     proposalCase.revisions.length > 0;
   const similarCases = initialDraftWorkflowReady
     ? await findSimilarAcceptedCasesSafely({
+        excludeCaseId: proposalCase.id,
         originalRequestText: proposalCase.originalRequestText,
         requirementSummary: proposalCase.requirementSummary,
       })
     : [];
+  const canConfirmRevision = canConfirmCurrentRevision(proposalCase.status);
   const canSendCurrentRevision = proposalCase.status === ProposalStatus.READY_TO_SEND;
   const canProcessCustomerFeedback =
     proposalCase.status === ProposalStatus.WAITING_CUSTOMER_FEEDBACK;
@@ -59,15 +65,25 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
               Precision Proposal Desk
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
-              {proposalCase.title}
-            </h1>
+            <TitleEditor
+              proposalCaseId={proposalCase.id}
+              initialTitle={proposalCase.title}
+            />
             <p className="text-sm text-slate-300">
               客户：{proposalCase.customerName} · 当前轮次：第{" "}
               {proposalCase.currentRevisionNumber} 轮
             </p>
           </div>
-          <StatusBadge status={proposalCase.status} />
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge status={proposalCase.status} />
+            <RegenerateProposalButton
+              proposalCaseId={proposalCase.id}
+              disabled={
+                proposalCase.status === ProposalStatus.ACCEPTED ||
+                proposalCase.status === ProposalStatus.CANCELED
+              }
+            />
+          </div>
         </div>
       </header>
 
@@ -120,18 +136,34 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             <CardTitle>分析师方案确认</CardTitle>
           </CardHeader>
           <CardContent>
-            {initialDraftWorkflowReady && currentRevision ? (
+            {canConfirmRevision && currentRevision ? (
               <ProposalEditor
+                key={currentRevision.id}
                 proposalCaseId={proposalCase.id}
                 revisionId={currentRevision.id}
                 initialText={
                   currentRevision.analystConfirmedText?.trim() || currentRevision.aiDraft
                 }
               />
+            ) : initialDraftWorkflowReady &&
+              currentRevision?.analystConfirmedText?.trim() ? (
+              <div className="space-y-2">
+                <Label htmlFor="confirmed-proposal-text">已确认方案</Label>
+                <Textarea
+                  id="confirmed-proposal-text"
+                  rows={18}
+                  readOnly
+                  value={currentRevision.analystConfirmedText}
+                  className="border-slate-700 bg-slate-900/70 font-mono text-sm leading-6 text-slate-200"
+                />
+                <p className="text-xs text-slate-400">
+                  当前方案已确认，下一步可在客户反馈操作中继续流转。
+                </p>
+              </div>
             ) : (
               <p className="rounded-md border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-400">
                 {initialDraftWorkflowReady
-                  ? "当前没有可编辑的修订草稿。"
+                  ? "当前没有待确认的修订草稿。"
                   : "草稿尚未生成完成，生成结束后可在此编辑确认。"}
               </p>
             )}
