@@ -45,7 +45,7 @@ export function RevisionTimeline({ revisions }: { revisions: RevisionItem[] }) {
                 {revision.customerFeedbackText?.trim() || "首轮方案"}
               </p>
               {revision.revisionNotes?.trim() ? (
-                <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-cyan-200/90">
+                <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground/80">
                   修订说明：{revision.revisionNotes}
                 </p>
               ) : null}
@@ -55,7 +55,7 @@ export function RevisionTimeline({ revisions }: { revisions: RevisionItem[] }) {
                   <dd>{formatDateTime(revision.confirmedByAnalystAt)}</dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">发送客户</dt>
+                  <dt className="text-muted-foreground/60">发送客户</dt>
                   <dd>{formatDateTime(revision.sentToCustomerAt)}</dd>
                 </div>
               </dl>

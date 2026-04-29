@@ -87,7 +87,7 @@ export function GenerationStatusPanel({
     <div className="space-y-3 rounded-lg border border-border bg-muted/60 p-4">
       <div className="flex items-start gap-3">
         {(generationStatus === "PENDING" || generationStatus === "RUNNING") && (
-          <Loader2 className="mt-0.5 size-4 animate-spin text-cyan-300" aria-hidden />
+          <Loader2 className="mt-0.5 size-4 animate-spin text-primary" aria-hidden />
         )}
         <div className="space-y-1 text-sm">
           <p className="font-medium text-foreground">

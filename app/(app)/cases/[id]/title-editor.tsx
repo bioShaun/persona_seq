@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Check, Loader2, Pencil, RefreshCcw, X } from "lucide-react";
 import { updateCaseTitle } from "@/app/(app)/cases/actions";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,10 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(initialTitle);
   const [regenerating, setRegenerating] = useState(false);
+
+  useEffect(() => {
+    setDraft(initialTitle);
+  }, [initialTitle]);
 
   const handleSave = async () => {
     if (!draft.trim() || draft === initialTitle) {
@@ -67,7 +71,7 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="border-slate-600 bg-slate-800 text-lg font-semibold text-slate-100"
+            className="border-input bg-background text-lg font-semibold text-foreground"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -81,7 +85,7 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
           <button
             type="submit"
             disabled={isPending || !draft.trim()}
-            className="rounded p-1 text-emerald-400 transition-colors hover:text-emerald-300 disabled:opacity-50"
+            className="rounded p-1 text-emerald-600 transition-colors hover:text-emerald-700 disabled:opacity-50"
           >
             {isPending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -93,7 +97,7 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
             type="button"
             onClick={handleCancel}
             disabled={isPending}
-            className="rounded p-1 text-slate-400 transition-colors hover:text-slate-300 disabled:opacity-50"
+            className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           >
             <X className="size-4" />
           </button>
@@ -104,13 +108,13 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
 
   return (
     <div className="flex items-center gap-3">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         {draft}
       </h1>
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="rounded p-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         title="编辑标题"
       >
         <Pencil className="size-4" />
@@ -119,7 +123,7 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
         type="button"
         onClick={() => void handleRegenerateTitle()}
         disabled={regenerating}
-        className="rounded p-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 disabled:opacity-50"
+        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
         title="重新生成标题"
       >
         {regenerating ? (

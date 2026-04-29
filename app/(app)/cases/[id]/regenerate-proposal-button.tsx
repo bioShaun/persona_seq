@@ -46,7 +46,7 @@ export function RegenerateProposalButton({
         disabled={disabled || regenerating}
         variant="outline"
         size="sm"
-        className="border-slate-600 bg-transparent text-slate-100 hover:bg-slate-800 disabled:opacity-50"
+        className="border-input bg-background text-foreground hover:bg-muted disabled:opacity-50"
       >
         {regenerating ? (
           <>
@@ -60,7 +60,7 @@ export function RegenerateProposalButton({
           </>
         )}
       </Button>
-      {error ? <p className="mt-1 text-xs text-rose-300">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }

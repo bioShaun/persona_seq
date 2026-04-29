@@ -37,14 +37,14 @@ export function SimilarCasesPanel({ cases }: { cases: SimilarCaseItem[] }) {
                 </h3>
                 <Link
                   href={`/cases/${caseItem.id}`}
-                  className="inline-flex items-center text-xs text-cyan-300 hover:text-cyan-200"
+                  className="inline-flex items-center text-xs text-primary hover:text-primary/70"
                 >
                   查看
                   <ArrowUpRight className="ml-1 size-3" aria-hidden />
                 </Link>
               </div>
 
-              <p className="text-xs text-cyan-200/90">{caseItem.matchedReason}</p>
+              <p className="text-xs text-muted-foreground">{caseItem.matchedReason}</p>
 
               <p className="whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
                 {caseItem.requirementSummary?.trim() || "该案例暂无结构化需求摘要。"}
