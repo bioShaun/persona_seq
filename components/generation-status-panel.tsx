@@ -84,18 +84,18 @@ export function GenerationStatusPanel({
   const canRetry = generationStatus === "FAILED" && !isPending;
 
   return (
-    <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/60 p-4">
+    <div className="space-y-3 rounded-lg border border-border bg-muted/60 p-4">
       <div className="flex items-start gap-3">
         {(generationStatus === "PENDING" || generationStatus === "RUNNING") && (
           <Loader2 className="mt-0.5 size-4 animate-spin text-cyan-300" aria-hidden />
         )}
         <div className="space-y-1 text-sm">
-          <p className="font-medium text-slate-100">
+          <p className="font-medium text-foreground">
             {generationStatus === "FAILED"
               ? "AI 生成失败"
               : "AI 正在生成草稿，通常需要 1-2 分钟"}
           </p>
-          <p className="text-slate-300">
+          <p className="text-muted-foreground">
             {generationStatus === "FAILED"
               ? generationError?.trim() || "请检查 AI 配置后重试。"
               : "你可以离开此页面，系统会持续生成。"}
@@ -109,7 +109,8 @@ export function GenerationStatusPanel({
           type="button"
           onClick={() => void triggerGeneration()}
           disabled={!canRetry}
-          className="border border-slate-600 bg-slate-800 text-slate-100 hover:bg-slate-700"
+          variant="outline"
+          className="w-full"
         >
           <RefreshCcw className="mr-2 size-4" aria-hidden />
           重新生成

@@ -18,18 +18,18 @@ type CasesErrorProps = {
 export default function CasesError({ error, reset }: CasesErrorProps) {
   return (
     <section className="space-y-6">
-      <Card className="border-rose-800/60 bg-slate-950/80 text-slate-100">
+      <Card className="border-destructive/60 bg-card/80 text-foreground">
         <CardHeader className="space-y-2">
           <CardTitle className="flex items-center gap-2 text-rose-200">
             <AlertTriangle className="size-5" aria-hidden />
             案例页面加载失败
           </CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardDescription className="text-muted-foreground">
             可能是数据库、网络或依赖异常，请检查环境后重试。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="rounded-md border border-slate-800 bg-slate-900/80 p-3 text-xs text-slate-400">
+          <p className="rounded-md border border-border bg-muted/80 p-3 text-xs text-muted-foreground">
             {error.message || "未知错误，请稍后重试。"}
           </p>
           <Button

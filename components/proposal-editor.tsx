@@ -43,7 +43,7 @@ export function ProposalEditor({
           rows={18}
           required
           defaultValue={initialText}
-          className="border-slate-700 bg-slate-900/90 font-mono text-sm leading-6 text-slate-100 placeholder:text-slate-500"
+          className="border-border bg-muted/90 font-mono text-sm leading-6 text-foreground placeholder:text-muted-foreground"
           placeholder="在此确认并微调发送给客户的正式方案文本。"
         />
       </div>

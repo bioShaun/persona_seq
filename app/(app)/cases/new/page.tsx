@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createCaseAndGenerateDraft } from "@/app/(app)/cases/actions";
 import { SubmitButton } from "@/components/submit-button";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,12 +19,13 @@ export default function NewCasePage() {
             粘贴客户聊天记录、邮件原文或会议摘录，系统将自动创建案例并生成首版草稿。
           </p>
         </div>
-        <Button asChild variant="outline" className="border-slate-600 bg-transparent text-slate-100 hover:bg-slate-800">
-          <Link href="/cases">
-            <ArrowLeft className="mr-2 size-4" aria-hidden />
-            返回工作台
-          </Link>
-        </Button>
+        <Link
+          href="/cases"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium whitespace-nowrap transition-all border-border bg-background hover:bg-muted hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 size-4" aria-hidden />
+          返回工作台
+        </Link>
       </div>
 
       <Card className="border-slate-700 bg-slate-950/70 text-slate-100">

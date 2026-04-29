@@ -23,25 +23,25 @@ function formatDateTime(value: Date | null) {
 
 export function RevisionTimeline({ revisions }: { revisions: RevisionItem[] }) {
   return (
-    <Card className="border-slate-700 bg-slate-950/70 text-slate-100">
+    <Card className="border-border bg-card text-card-foreground">
       <CardHeader>
         <CardTitle>修订时间线</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {revisions.length === 0 ? (
-          <p className="rounded-md border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-400">
+          <p className="rounded-md border border-dashed border-border bg-muted/60 p-4 text-sm text-muted-foreground">
             当前还没有修订记录。
           </p>
         ) : (
           revisions.map((revision) => (
             <article
               key={revision.id}
-              className="rounded-lg border border-slate-800 bg-slate-900/70 p-4"
+              className="rounded-lg border border-border bg-muted p-4"
             >
-              <h3 className="text-sm font-semibold text-slate-100">
+              <h3 className="text-sm font-semibold text-foreground">
                 第 {revision.revisionNumber} 轮
               </h3>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
                 {revision.customerFeedbackText?.trim() || "首轮方案"}
               </p>
               {revision.revisionNotes?.trim() ? (
@@ -49,9 +49,9 @@ export function RevisionTimeline({ revisions }: { revisions: RevisionItem[] }) {
                   修订说明：{revision.revisionNotes}
                 </p>
               ) : null}
-              <dl className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
+              <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                 <div>
-                  <dt className="text-slate-500">分析师确认</dt>
+                  <dt className="text-muted-foreground/60">分析师确认</dt>
                   <dd>{formatDateTime(revision.confirmedByAnalystAt)}</dd>
                 </div>
                 <div>

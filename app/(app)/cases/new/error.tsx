@@ -19,18 +19,18 @@ type NewCaseErrorProps = {
 export default function NewCaseError({ error, reset }: NewCaseErrorProps) {
   return (
     <section className="space-y-6">
-      <Card className="border-rose-800/60 bg-slate-950/80 text-slate-100">
+      <Card className="border-destructive/60 bg-card/80 text-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-rose-200">
             <AlertTriangle className="size-5" aria-hidden />
             生成草稿失败
           </CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardDescription className="text-muted-foreground">
             请检查表单内容和系统配置后重试。如果持续失败，可先返回案例列表确认环境状态。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="rounded-md border border-slate-800 bg-slate-900/80 p-3 text-xs text-slate-400">
+          <p className="rounded-md border border-border bg-muted/80 p-3 text-xs text-muted-foreground">
             {error.message || "未知错误"}
           </p>
           <div className="flex flex-wrap items-center gap-3">
@@ -42,14 +42,12 @@ export default function NewCaseError({ error, reset }: NewCaseErrorProps) {
               <RefreshCw className="mr-2 size-4" aria-hidden />
               重试
             </Button>
-            <Button
-              asChild
-              type="button"
-              variant="outline"
-              className="border-slate-700 bg-transparent text-slate-100 hover:bg-slate-800"
+            <Link
+              href="/cases"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium whitespace-nowrap transition-all border-border bg-background hover:bg-muted hover:text-foreground"
             >
-              <Link href="/cases">返回工作台</Link>
-            </Button>
+              返回工作台
+            </Link>
           </div>
         </CardContent>
       </Card>

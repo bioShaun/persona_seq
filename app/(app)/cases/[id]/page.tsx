@@ -59,7 +59,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
 
   return (
     <section className="space-y-6">
-      <header className="rounded-xl border border-slate-800/90 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 shadow-[0_24px_80px_-36px_rgba(34,211,238,0.45)]">
+      <header className="rounded-xl border border-border/90 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 shadow-[0_24px_80px_-36px_rgba(34,211,238,0.45)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
@@ -69,7 +69,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
               proposalCaseId={proposalCase.id}
               initialTitle={proposalCase.title}
             />
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-muted-foreground">
               客户：{proposalCase.customerName} · 当前轮次：第{" "}
               {proposalCase.currentRevisionNumber} 轮
             </p>
@@ -88,7 +88,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1.4fr_1fr]">
-        <Card className="border-slate-700 bg-slate-950/70 text-slate-100">
+        <Card className="border-border bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>客户上下文</CardTitle>
           </CardHeader>
@@ -102,36 +102,36 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             ) : null}
 
             <section className="space-y-2">
-              <h2 className="text-sm font-medium text-slate-200">客户原始需求</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300">
+              <h2 className="text-sm font-medium text-foreground/80">客户原始需求</h2>
+              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
                 {proposalCase.originalRequestText}
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-sm font-medium text-slate-200">需求摘要</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-900/70 p-3 text-sm leading-6 text-slate-200">
+              <h2 className="text-sm font-medium text-foreground/80">需求摘要</h2>
+              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-foreground/80">
                 {proposalCase.requirementSummary?.trim() || "尚未生成需求摘要。"}
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-sm font-medium text-slate-200">缺失信息</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300">
+              <h2 className="text-sm font-medium text-foreground/80">缺失信息</h2>
+              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
                 {proposalCase.missingInformation?.trim() || "当前未记录缺失信息。"}
               </p>
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-sm font-medium text-slate-200">最近客户反馈</h2>
-              <p className="whitespace-pre-wrap rounded-md border border-slate-800 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300">
+              <h2 className="text-sm font-medium text-foreground/80">最近客户反馈</h2>
+              <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/70 p-3 text-sm leading-6 text-muted-foreground">
                 {currentRevision?.customerFeedbackText?.trim() || "暂无客户反馈。"}
               </p>
             </section>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-700 bg-slate-950/70 text-slate-100">
+        <Card className="border-border bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>分析师方案确认</CardTitle>
           </CardHeader>
@@ -154,14 +154,14 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                   rows={18}
                   readOnly
                   value={currentRevision.analystConfirmedText}
-                  className="border-slate-700 bg-slate-900/70 font-mono text-sm leading-6 text-slate-200"
+                  className="border-border bg-muted/70 font-mono text-sm leading-6 text-foreground/80"
                 />
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   当前方案已确认，下一步可在客户反馈操作中继续流转。
                 </p>
               </div>
             ) : (
-              <p className="rounded-md border border-dashed border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-400">
+              <p className="rounded-md border border-dashed border-border bg-muted/60 p-4 text-sm text-muted-foreground">
                 {initialDraftWorkflowReady
                   ? "当前没有待确认的修订草稿。"
                   : "草稿尚未生成完成，生成结束后可在此编辑确认。"}
@@ -174,7 +174,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       </div>
 
       {initialDraftWorkflowReady && currentRevision?.analystConfirmedText?.trim() ? (
-        <Card className="border-slate-700 bg-slate-950/70 text-slate-100">
+        <Card className="border-border bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>PM 客户反馈操作</CardTitle>
           </CardHeader>
@@ -186,20 +186,20 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                 <SubmitButton
                   idleText="标记已发送客户"
                   pendingText="提交中..."
-                  className="w-full border border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800 disabled:opacity-70"
+                  className="w-full border border-border bg-muted text-foreground hover:bg-muted disabled:opacity-70"
                 />
               </form>
             ) : null}
 
             {canSendCurrentRevision ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 已确认当前方案，可先标记“已发送客户”，再记录客户反馈结果。
               </p>
             ) : null}
 
             {canProcessCustomerFeedback ? (
               <>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   当前处于客户反馈阶段，可登记结果或基于反馈生成下一轮草稿。
                 </p>
 
@@ -233,7 +233,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                       rows={5}
                       required
                       placeholder="粘贴客户反馈、邮件回复或会议纪要关键意见。"
-                      className="border-slate-700 bg-slate-900/90 text-slate-100 placeholder:text-slate-500"
+                      className="border-border bg-muted/90 text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
                   <div className="flex justify-end">
@@ -246,7 +246,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                 </form>
               </>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground">
                 当前状态暂不需要录入客户反馈，待流程进入反馈阶段后可继续操作。
               </p>
             )}

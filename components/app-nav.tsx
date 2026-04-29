@@ -12,9 +12,9 @@ const NAV_ITEMS = [
     label: "案例列表",
     icon: FolderKanban,
     activeClassName:
-      "border border-slate-600 bg-slate-800 text-slate-50 hover:bg-slate-700",
+      "border border-border bg-muted text-foreground hover:bg-secondary",
     inactiveClassName:
-      "border border-slate-700 bg-slate-900/70 text-slate-100 hover:bg-slate-800",
+      "border border-border bg-card/70 text-secondary-foreground hover:bg-muted",
     variant: "secondary" as const,
   },
   {

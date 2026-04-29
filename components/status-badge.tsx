@@ -5,13 +5,13 @@ const STATUS_CONFIG: Record<
   ProposalStatus,
   {
     label: string;
-    className: string;
+    variant?: "default" | "secondary" | "destructive" | "outline" | "ghost";
+    className?: string;
   }
 > = {
   DRAFTING: {
     label: "草稿中",
-    className:
-      "border-slate-600 bg-slate-800/90 text-slate-200 ring-1 ring-inset ring-slate-500/40",
+    variant: "secondary" as const,
   },
   ANALYST_REVIEW: {
     label: "待分析确认",
@@ -54,9 +54,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <Badge
+      variant={config?.variant ?? "default"}
       className={
         config?.className ??
-        "border-slate-600 bg-slate-800/90 text-slate-200 ring-1 ring-inset ring-slate-500/40"
+        ""
       }
     >
       {config?.label ?? String(status)}
