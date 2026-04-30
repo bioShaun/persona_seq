@@ -88,12 +88,14 @@ export async function regenerateProposalDraft(
     select: { metadata: true },
   });
 
-  const referencedCaseIds = referencedLogs
-    .map((log) => {
-      const meta = log.metadata as { targetCaseId?: string } | null;
-      return meta?.targetCaseId;
-    })
-    .filter((id): id is string => Boolean(id));
+  const referencedCaseIds = [...new Set(
+    referencedLogs
+      .map((log) => {
+        const meta = log.metadata as { targetCaseId?: string } | null;
+        return meta?.targetCaseId;
+      })
+      .filter((id): id is string => Boolean(id)),
+  )];
 
   let referencedCaseTexts: string[] = [];
   if (referencedCaseIds.length > 0) {
