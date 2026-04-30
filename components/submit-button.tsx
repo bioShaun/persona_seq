@@ -2,17 +2,19 @@
 
 import { Loader2, Sparkles } from "lucide-react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 
 type SubmitButtonProps = {
   idleText: string;
   pendingText: string;
+  variant?: ButtonProps["variant"];
   className?: string;
 };
 
 export function SubmitButton({
   idleText,
   pendingText,
+  variant = "default",
   className,
 }: SubmitButtonProps) {
   const { pending } = useFormStatus();
@@ -20,6 +22,7 @@ export function SubmitButton({
   return (
     <Button
       type="submit"
+      variant={variant}
       disabled={pending}
       aria-disabled={pending}
       className={className}

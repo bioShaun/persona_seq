@@ -53,7 +53,6 @@ export function ProposalEditor({
           type="submit"
           disabled={isSubmitting}
           aria-disabled={isSubmitting}
-          className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
         >
           {isSubmitting ? (
             <>

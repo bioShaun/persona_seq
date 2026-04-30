@@ -53,6 +53,8 @@ type PersistFeedbackRevisionInput = {
     aiDraft: string;
     revisionNotes: string | null;
   };
+  suggestedTitle?: string;
+  tags?: CaseTags;
 };
 
 export type ProposalCaseInvariantSnapshot = Pick<
@@ -824,6 +826,31 @@ export async function persistFeedbackRevision(
         afterStatus: ProposalStatus.ANALYST_REVIEW,
       },
     });
+
+    if (input.suggestedTitle || input.tags) {
+      const caseUpdateData: Record<string, unknown> = {};
+
+      if (input.suggestedTitle) {
+        caseUpdateData.title = input.suggestedTitle;
+      }
+
+      if (input.tags) {
+        caseUpdateData.productLine = input.tags.productLine;
+        caseUpdateData.organism = input.tags.organism;
+        caseUpdateData.application = input.tags.application;
+        caseUpdateData.analysisDepth = input.tags.analysisDepth;
+        caseUpdateData.sampleTypes = input.tags.sampleTypes;
+        caseUpdateData.platforms = input.tags.platforms;
+        caseUpdateData.keywordTags = input.tags.keywordTags;
+        caseUpdateData.tagsGeneratedAt = new Date();
+        caseUpdateData.tagsModel = process.env.AI_MODEL ?? null;
+      }
+
+      await tx.proposalCase.update({
+        where: { id: input.proposalCaseId },
+        data: caseUpdateData,
+      });
+    }
 
     return createdRevision;
   });

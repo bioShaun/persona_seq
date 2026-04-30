@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { generateInitialProposalDraft } from "@/lib/ai/generate-proposal";
+import {
+  generateInitialProposalDraft,
+  generateRevisionProposalDraft,
+} from "@/lib/ai/generate-proposal";
 import type { ProposalAiProvider } from "@/lib/ai/types";
 
 function providerReturning(text: string): ProposalAiProvider {
@@ -132,5 +135,70 @@ describe("proposal generation parsing", () => {
     expect(result.proposalDraft).toContain("完整的方案内容");
     expect(result.suggestedTitle).toContain("水稻转录组分析");
     expect(result.tags).toBeDefined();
+  });
+
+  it("revision draft extracts suggestedTitle and tags from D/E sections", async () => {
+    const result = await generateRevisionProposalDraft(
+      providerReturning(
+        [
+          "A. 修订说明",
+          "已增加 WGCNA 分析。",
+          "",
+          "B. 修订后完整方案草稿",
+          "1. 客户需求理解",
+          "水稻转录组 + WGCNA 共表达网络分析方案。",
+          "",
+          "C. 仍需客户确认的问题",
+          "- 样本数量待确认",
+          "",
+          "D. 建议标题",
+          "水稻 WGCNA 共表达分析",
+          "",
+          "E. 案例标签",
+          JSON.stringify({
+            productLine: "RNA-seq",
+            organism: "水稻",
+            application: "表达分析",
+            keywordTags: ["WGCNA", "共表达网络"],
+          }),
+        ].join("\n"),
+      ),
+      {
+        originalRequestText: "水稻转录组分析",
+        previousConfirmedProposal: "上一版方案",
+        customerFeedbackText: "增加 WGCNA 分析",
+      },
+    );
+
+    expect(result.suggestedTitle).toContain("水稻 WGCNA 共表达分析");
+    expect(result.tags).toBeDefined();
+    expect(result.tags!.productLine).toBe("RNA-seq");
+    expect(result.tags!.keywordTags).toEqual(["WGCNA", "共表达网络"]);
+    expect(result.revisionNotes).toContain("WGCNA");
+    expect(result.proposalDraft).toContain("共表达");
+  });
+
+  it("revision draft returns undefined title and tags when sections are absent", async () => {
+    const result = await generateRevisionProposalDraft(
+      providerReturning(
+        [
+          "A. 修订说明",
+          "已根据反馈修订。",
+          "",
+          "B. 修订后完整方案草稿",
+          "1. 客户需求理解",
+          "完整方案。",
+        ].join("\n"),
+      ),
+      {
+        originalRequestText: "水稻转录组",
+        previousConfirmedProposal: "上一版",
+        customerFeedbackText: "请修订",
+      },
+    );
+
+    expect(result.suggestedTitle).toBeUndefined();
+    expect(result.tags).toBeUndefined();
+    expect(result.proposalDraft).toContain("完整方案");
   });
 });

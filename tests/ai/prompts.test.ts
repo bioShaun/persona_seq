@@ -32,4 +32,31 @@ describe("AI proposal prompts", () => {
     expect(prompt).toContain("1. 客户需求理解");
     expect(prompt).toContain("7. 需要客户补充确认的问题");
   });
+
+  it("revision prompt requests suggested title (section D)", () => {
+    const prompt = buildRevisionProposalPrompt({
+      originalRequestText: "水稻转录组",
+      previousConfirmedProposal: "上一版方案",
+      customerFeedbackText: "增加 WGCNA",
+    });
+
+    expect(prompt).toContain("D. 建议标题");
+    expect(prompt).toContain("四部分");
+  });
+
+  it("both prompts instruct AI to leave uncertain tags as null", () => {
+    const initial = buildInitialProposalPrompt({
+      originalRequestText: "水稻转录组",
+    });
+    const revision = buildRevisionProposalPrompt({
+      originalRequestText: "水稻转录组",
+      previousConfirmedProposal: "上一版",
+      customerFeedbackText: "增加分析",
+    });
+
+    for (const prompt of [initial, revision]) {
+      expect(prompt).toContain("不确定");
+      expect(prompt).toContain("null");
+    }
+  });
 });

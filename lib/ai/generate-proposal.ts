@@ -32,12 +32,16 @@ export async function generateRevisionProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildRevisionProposalPrompt(input));
 
+  const suggestedTitle = extractSection(text, "D.");
+
   return {
     requirementSummary: "修订轮次沿用原始需求摘要。",
     missingInformation:
       extractSection(text, "C.") ?? "AI 未识别出新的待确认问题。",
     proposalDraft: extractSection(text, "B.") ?? text,
     revisionNotes: extractSection(text, "A.") ?? "AI 已根据客户反馈生成修订草稿。",
+    suggestedTitle: suggestedTitle ?? undefined,
+    tags: parseTags(text),
   };
 }
 

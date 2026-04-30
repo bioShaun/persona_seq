@@ -261,7 +261,8 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                   <SubmitButton
                     idleText="标记已发送客户"
                     pendingText="提交中..."
-                    className="w-full border border-border bg-muted text-foreground hover:bg-muted disabled:opacity-70"
+                    variant="outline"
+                    className="w-full"
                   />
                 </form>
               ) : null}
@@ -284,7 +285,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                       <SubmitButton
                         idleText="客户已同意"
                         pendingText="提交中..."
-                        className="w-full border border-emerald-500/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-70"
+                        className="w-full"
                       />
                     </form>
 
@@ -293,7 +294,8 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                       <SubmitButton
                         idleText="客户已取消"
                         pendingText="提交中..."
-                        className="w-full border border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25 disabled:opacity-70"
+                        variant="destructive"
+                        className="w-full"
                       />
                     </form>
                   </div>
@@ -315,7 +317,6 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                       <SubmitButton
                         idleText="生成下一轮修订草稿"
                         pendingText="生成中..."
-                        className="bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-70"
                       />
                     </div>
                   </form>

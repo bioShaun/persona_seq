@@ -182,6 +182,8 @@ export async function createRevisionFromFeedback(formData: FormData) {
     proposalCaseId: input.proposalCaseId,
     actorUserId: currentUser.id,
     revisionData,
+    suggestedTitle: draft.suggestedTitle,
+    tags: draft.tags,
   });
 
   // Invalidate stale embedding when content changes
