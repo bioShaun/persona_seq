@@ -23,8 +23,10 @@ import {
   isEditableCase,
 } from "@/lib/domain/proposal-ui-state";
 import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { RegenerateProposalButton } from "./regenerate-proposal-button";
 import { SimilarCasesDrawer } from "./similar-cases-drawer";
+import { TagEditor } from "./tag-editor";
 import { TitleEditor } from "./title-editor";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +60,8 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       })
     : [];
   const canConfirmRevision = canConfirmCurrentRevision(proposalCase.status);
-
+  const currentUser = await getCurrentUser();
+  const isAdmin = currentUser.role === "ADMIN";
 
   return (
     <section className="flex gap-6">
@@ -83,6 +86,21 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
             }
           />
         </div>
+
+        <TagEditor
+          proposalCaseId={proposalCase.id}
+          tags={{
+            productLine: proposalCase.productLine,
+            organism: proposalCase.organism,
+            application: proposalCase.application,
+            analysisDepth: proposalCase.analysisDepth,
+            sampleTypes: proposalCase.sampleTypes,
+            platforms: proposalCase.platforms,
+            keywordTags: proposalCase.keywordTags,
+          }}
+          isAdmin={isAdmin}
+          isEditable={isEditableCase(proposalCase.status)}
+        />
 
         <div className="space-y-3">
           {canConfirmRevision ? (

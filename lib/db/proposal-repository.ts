@@ -828,3 +828,88 @@ export async function persistFeedbackRevision(
     return createdRevision;
   });
 }
+
+export function assertCaseTagsEditable(status: ProposalStatus) {
+  if (status === ProposalStatus.ACCEPTED || status === ProposalStatus.CANCELED) {
+    throw new Error("标签不可编辑：案例已归档");
+  }
+}
+
+type UpdateCaseTagsInput = {
+  productLine?: string | null;
+  organism?: string | null;
+  application?: string | null;
+  analysisDepth?: string | null;
+  sampleTypes?: string[];
+  platforms?: string[];
+  keywordTags?: string[];
+};
+
+export async function reExtractCaseTags(
+  caseId: string,
+  provider: { generateText: (prompt: string) => Promise<string> },
+) {
+  const proposalCase = await prisma.proposalCase.findUnique({
+    where: { id: caseId },
+    select: {
+      id: true,
+      originalRequestText: true,
+      requirementSummary: true,
+      revisions: {
+        orderBy: { revisionNumber: "desc" },
+        take: 1,
+        select: { analystConfirmedText: true },
+      },
+    },
+  });
+
+  if (!proposalCase) {
+    throw new Error("案例不存在");
+  }
+
+  const confirmedText = proposalCase.revisions[0]?.analystConfirmedText ?? "";
+  const prompt = `请从以下案例信息中提取结构化标签（JSON格式）：\n\n客户原始需求：${proposalCase.originalRequestText}\n需求摘要：${proposalCase.requirementSummary ?? "无"}\n确认方案：${confirmedText}\n\n请输出JSON对象，包含以下字段（均可选）：productLine, organism, application, analysisDepth, sampleTypes, platforms, keywordTags`;
+
+  const text = await provider.generateText(prompt);
+
+  const { parseTagsFromJson } = await import("@/lib/ai/generate-proposal");
+  const tags = parseTagsFromJson(text);
+
+  return prisma.proposalCase.update({
+    where: { id: caseId },
+    data: {
+      ...(tags
+        ? {
+            productLine: tags.productLine ?? null,
+            organism: tags.organism ?? null,
+            application: tags.application ?? null,
+            analysisDepth: tags.analysisDepth ?? null,
+            sampleTypes: tags.sampleTypes ?? [],
+            platforms: tags.platforms ?? [],
+            keywordTags: tags.keywordTags ?? [],
+          }
+        : {}),
+      tagsGeneratedAt: new Date(),
+      tagsModel: "re-extract",
+    },
+  });
+}
+
+export async function updateCaseTags(
+  caseId: string,
+  tags: UpdateCaseTagsInput,
+) {
+  return prisma.proposalCase.update({
+    where: { id: caseId },
+    data: {
+      ...(tags.productLine !== undefined ? { productLine: tags.productLine } : {}),
+      ...(tags.organism !== undefined ? { organism: tags.organism } : {}),
+      ...(tags.application !== undefined ? { application: tags.application } : {}),
+      ...(tags.analysisDepth !== undefined ? { analysisDepth: tags.analysisDepth } : {}),
+      ...(tags.sampleTypes !== undefined ? { sampleTypes: tags.sampleTypes } : {}),
+      ...(tags.platforms !== undefined ? { platforms: tags.platforms } : {}),
+      ...(tags.keywordTags !== undefined ? { keywordTags: tags.keywordTags } : {}),
+      updatedAt: new Date(),
+    },
+  });
+}

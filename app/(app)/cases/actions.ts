@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { createRevisionFromCustomerFeedback as buildFeedbackRevision } from "@/lib/domain/proposal-workflow";
 import {
   assertCaseReadyForFeedbackRevision,
+  assertCaseTagsEditable,
   confirmRevision,
   createProposalCase,
   loadCaseWithRevision,
@@ -19,6 +20,8 @@ import {
   markCustomerAccepted,
   markCustomerCanceled,
   markSentToCustomer,
+  reExtractCaseTags as reExtractCaseTagsInRepo,
+  updateCaseTags as updateCaseTagsInRepo,
   updateCaseTitle as updateCaseTitleInRepo,
 } from "@/lib/db/proposal-repository";
 import {
@@ -27,6 +30,7 @@ import {
   parseCreateRevisionFromFeedbackInput,
   parseMarkOutcomeInput,
   parseSendCurrentRevisionInput,
+  parseUpdateCaseTagsInput,
   parseUpdateCaseTitleInput,
 } from "@/app/(app)/cases/action-inputs";
 
@@ -150,4 +154,34 @@ export async function createRevisionFromFeedback(formData: FormData) {
   });
 
   revalidatePath(`/cases/${input.proposalCaseId}`);
+}
+
+export async function updateCaseTags(formData: FormData) {
+  const input = parseUpdateCaseTagsInput(formData);
+
+  const proposalCase = await loadCaseWithRevision(input.proposalCaseId);
+  if (!proposalCase) {
+    throw new Error("案例不存在");
+  }
+  assertCaseTagsEditable(proposalCase.status);
+
+  await updateCaseTagsInRepo(input.proposalCaseId, input.tags);
+  revalidatePath(`/cases/${input.proposalCaseId}`);
+}
+
+export async function reExtractCaseTagsAction(formData: FormData) {
+  const proposalCaseId = formData.get("proposalCaseId");
+  if (typeof proposalCaseId !== "string" || !proposalCaseId.trim()) {
+    throw new Error("proposalCaseId is required");
+  }
+
+  const proposalCase = await loadCaseWithRevision(proposalCaseId);
+  if (!proposalCase) {
+    throw new Error("案例不存在");
+  }
+  assertCaseTagsEditable(proposalCase.status);
+
+  const provider = getProposalAiProvider();
+  await reExtractCaseTagsInRepo(proposalCaseId, provider);
+  revalidatePath(`/cases/${proposalCaseId}`);
 }
