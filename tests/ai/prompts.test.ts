@@ -41,7 +41,7 @@ describe("AI proposal prompts", () => {
     });
 
     expect(prompt).toContain("D. 建议标题");
-    expect(prompt).toContain("四部分");
+    expect(prompt).toContain("五部分");
   });
 
   it("both prompts instruct AI to leave uncertain tags as null", () => {

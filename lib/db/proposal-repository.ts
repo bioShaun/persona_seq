@@ -835,13 +835,13 @@ export async function persistFeedbackRevision(
       }
 
       if (input.tags) {
-        caseUpdateData.productLine = input.tags.productLine;
-        caseUpdateData.organism = input.tags.organism;
-        caseUpdateData.application = input.tags.application;
-        caseUpdateData.analysisDepth = input.tags.analysisDepth;
-        caseUpdateData.sampleTypes = input.tags.sampleTypes;
-        caseUpdateData.platforms = input.tags.platforms;
-        caseUpdateData.keywordTags = input.tags.keywordTags;
+        caseUpdateData.productLine = input.tags.productLine ?? null;
+        caseUpdateData.organism = input.tags.organism ?? null;
+        caseUpdateData.application = input.tags.application ?? null;
+        caseUpdateData.analysisDepth = input.tags.analysisDepth ?? null;
+        caseUpdateData.sampleTypes = input.tags.sampleTypes ?? [];
+        caseUpdateData.platforms = input.tags.platforms ?? [];
+        caseUpdateData.keywordTags = input.tags.keywordTags ?? [];
         caseUpdateData.tagsGeneratedAt = new Date();
         caseUpdateData.tagsModel = process.env.AI_MODEL ?? null;
       }

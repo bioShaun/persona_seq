@@ -26,7 +26,7 @@ export function buildInitialProposalPrompt(
           "",
         ]
       : []),
-      "请输出以下四部分:",
+      "请输出以下五部分:",
       "A. 需求摘要",
       "B. 缺失信息清单",
       "C. 方案草稿，结构如下:",
@@ -60,7 +60,7 @@ export function buildRevisionProposalPrompt(input: RevisionProposalInput) {
     "客户最新反馈:",
     input.customerFeedbackText,
     "",
-      "请输出以下四部分:",
+      "请输出以下五部分:",
       "A. 修订说明，逐条说明如何回应客户反馈",
       "B. 修订后完整方案草稿，必须是可直接发送给客户的完整方案，不要只输出改动片段。结构如下:",
       proposalStructure,
