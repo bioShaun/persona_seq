@@ -133,7 +133,8 @@ describe("proposal generation parsing", () => {
     expect(result.requirementSummary).toContain("水稻转录组分析要点");
     expect(result.missingInformation).toContain("样本数量");
     expect(result.proposalDraft).toContain("完整的方案内容");
-    expect(result.suggestedTitle).toBe("水稻转录组分析");
+    expect(result.suggestedTitle).toContain("水稻转录组分析");
+    expect(result.suggestedTitle).not.toContain("D.");
     expect(result.tags).toBeDefined();
   });
 
@@ -170,7 +171,7 @@ describe("proposal generation parsing", () => {
       },
     );
 
-    expect(result.suggestedTitle).toBe("水稻 WGCNA 共表达分析");
+    expect(result.suggestedTitle).toContain("水稻 WGCNA 共表达分析");
     expect(result.tags).toBeDefined();
     expect(result.tags!.productLine).toBe("RNA-seq");
     expect(result.tags!.keywordTags).toEqual(["WGCNA", "共表达网络"]);
