@@ -133,7 +133,8 @@ describe("proposal generation parsing", () => {
     expect(result.requirementSummary).toContain("水稻转录组分析要点");
     expect(result.missingInformation).toContain("样本数量");
     expect(result.proposalDraft).toContain("完整的方案内容");
-    expect(result.suggestedTitle).toBe("水稻转录组分析");
+    expect(result.suggestedTitle).toContain("水稻转录组分析");
+    expect(result.suggestedTitle).not.toContain("D.");
     expect(result.tags).toBeDefined();
   });
 
@@ -170,12 +171,55 @@ describe("proposal generation parsing", () => {
       },
     );
 
-    expect(result.suggestedTitle).toBe("水稻 WGCNA 共表达分析");
+    expect(result.suggestedTitle).toContain("水稻 WGCNA 共表达分析");
     expect(result.tags).toBeDefined();
     expect(result.tags!.productLine).toBe("RNA-seq");
     expect(result.tags!.keywordTags).toEqual(["WGCNA", "共表达网络"]);
     expect(result.revisionNotes).toContain("WGCNA");
     expect(result.proposalDraft).toContain("共表达");
+  });
+
+  it("parses title and tags from markdown-bold headings", async () => {
+    const result = await generateInitialProposalDraft(
+      providerReturning(
+        [
+          "A. 需求摘要",
+          "20K芯片ROH近交分析。",
+          "",
+          "C. 方案草稿",
+          "1. 客户需求理解",
+          "需要分析ROH。",
+          "",
+          "**D. 建议标题**",
+          "20K芯片ROH近交分析",
+          "",
+          "**E. 案例标签**",
+          "```json",
+          JSON.stringify({
+            productLine: "液相芯片捕获测序",
+            organism: null,
+            application: null,
+            analysisDepth: "个性化定制分析",
+            sampleTypes: [],
+            platforms: [],
+            keywordTags: ["ROH", "FROH", "近交系数", "液相芯片", "连续性纯合片段"],
+          }),
+          "```",
+        ].join("\n"),
+      ),
+      { originalRequestText: "20K芯片ROH近交分析" },
+    );
+
+    expect(result.suggestedTitle).toBe("20K芯片ROH近交分析");
+    expect(result.tags).toBeDefined();
+    expect(result.tags!.productLine).toBe("液相芯片捕获测序");
+    expect(result.tags!.keywordTags).toEqual([
+      "ROH",
+      "FROH",
+      "近交系数",
+      "液相芯片",
+      "连续性纯合片段",
+    ]);
   });
 
   it("revision draft returns undefined title and tags when sections are absent", async () => {

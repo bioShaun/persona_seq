@@ -13,7 +13,7 @@ export async function generateInitialProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildInitialProposalPrompt(input));
 
-  const suggestedTitle = extractTitle(text);
+  const suggestedTitle = extractSectionBody(text, "D.");
   return {
     requirementSummary:
       extractSection(text, "A.") ??
@@ -21,7 +21,7 @@ export async function generateInitialProposalDraft(
     missingInformation:
       extractSection(text, "B.") ?? "AI 未识别出缺失信息。",
     proposalDraft: extractSection(text, "C.") ?? text,
-    suggestedTitle: suggestedTitle ?? undefined,
+    suggestedTitle: suggestedTitle || undefined,
     tags: parseTags(text),
   };
 }
@@ -32,7 +32,7 @@ export async function generateRevisionProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildRevisionProposalPrompt(input));
 
-  const suggestedTitle = extractTitle(text);
+  const suggestedTitle = extractSectionBody(text, "D.");
 
   return {
     requirementSummary: "修订轮次沿用原始需求摘要。",
@@ -46,7 +46,8 @@ export async function generateRevisionProposalDraft(
 }
 
 function extractSection(text: string, marker: string) {
-  const headingRegex = /^\s*(A\.|B\.|C\.|D\.|E\.)/gm;
+  // Support markdown bold headings like "**D. 建议标题**"
+  const headingRegex = /^\s*(?:\*\*)?\s*(A\.|B\.|C\.|D\.|E\.)/gm;
   const headings = [...text.matchAll(headingRegex)].map((match) => ({
     marker: match[1],
     index: match.index ?? 0,
@@ -66,31 +67,29 @@ function extractSection(text: string, marker: string) {
   return text.slice(current.index, endExclusive).trim();
 }
 
-function extractTitle(text: string): string | null {
-  const section = extractSection(text, "D.");
+/** Like extractSection but strips the heading line, returning only the body. */
+function extractSectionBody(text: string, marker: string): string | null {
+  const section = extractSection(text, marker);
   if (!section) return null;
-
-  const lines = section.split("\n");
-  if (lines.length > 1) {
-    const body = lines.slice(1).join("\n").trim();
-    if (body) return body;
-  }
-  return lines[0].replace(/^D\.\s*/, "").trim() || null;
+  const newlineIndex = section.indexOf("\n");
+  return newlineIndex === -1 ? "" : section.slice(newlineIndex + 1).trim();
 }
 
 export function parseTags(text: string): ProposalDraftResult["tags"] {
   const section = extractSection(text, "E.");
   if (section) {
+    // Strip markdown code fences (```json / ```) so JSON.parse succeeds
+    const cleaned = section.replace(/```(?:json)?\n?/g, "");
     try {
-      const jsonStart = section.indexOf("{");
+      const jsonStart = cleaned.indexOf("{");
       if (jsonStart !== -1) {
-        const parsed = JSON.parse(section.slice(jsonStart));
+        const parsed = JSON.parse(cleaned.slice(jsonStart));
         return CaseTagsSchema.parse(parsed);
       }
     } catch {
     }
 
-    return parseTagsFromJson(section);
+    return parseTagsFromJson(cleaned);
   }
 
   return parseTagsFromJson(text);
