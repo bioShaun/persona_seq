@@ -36,6 +36,7 @@ export async function runInitialDraftGeneration(
       aiDraft: draft.proposalDraft,
       actorUserId: input.actorUserId,
       suggestedTitle: draft.suggestedTitle,
+      tags: draft.tags,
     });
 
     revalidatePath("/cases");

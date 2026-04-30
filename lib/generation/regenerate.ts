@@ -99,6 +99,19 @@ export async function regenerateProposalDraft(
           generationStatus: GenerationStatus.SUCCEEDED,
           generationError: null,
           generationFinishedAt: new Date(),
+          ...(draft.tags
+            ? {
+                productLine: draft.tags.productLine ?? null,
+                organism: draft.tags.organism ?? null,
+                application: draft.tags.application ?? null,
+                analysisDepth: draft.tags.analysisDepth ?? null,
+                sampleTypes: draft.tags.sampleTypes ?? [],
+                platforms: draft.tags.platforms ?? [],
+                keywordTags: draft.tags.keywordTags ?? [],
+                tagsGeneratedAt: new Date(),
+                tagsModel: process.env.AI_MODEL ?? null,
+              }
+            : {}),
         },
       });
 

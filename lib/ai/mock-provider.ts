@@ -25,6 +25,20 @@ export class MockProposalAiProvider implements ProposalAiProvider {
       "7. 需要客户补充确认的问题",
       "请确认样本、数据和重点分析目标。",
       "",
+      "D. 建议标题",
+      "生物信息分析方案",
+      "",
+      "E. 案例标签",
+      JSON.stringify({
+        productLine: "其他",
+        organism: "其他",
+        application: "基础科研",
+        analysisDepth: "仅下机数据",
+        sampleTypes: ["其他"],
+        platforms: ["Illumina"],
+        keywordTags: ["生物信息"],
+      }),
+      "",
       `--- prompt length: ${prompt.length}`,
     ].join("\n");
   }

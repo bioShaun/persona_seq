@@ -1,3 +1,5 @@
+import type { CaseTags } from "@/lib/domain/case-tags";
+
 export type InitialProposalInput = {
   originalRequestText: string;
 };
@@ -14,6 +16,7 @@ export type ProposalDraftResult = {
   proposalDraft: string;
   revisionNotes?: string;
   suggestedTitle?: string;
+  tags?: CaseTags;
 };
 
 export interface ProposalAiProvider {

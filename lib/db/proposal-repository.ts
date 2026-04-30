@@ -23,6 +23,7 @@ type UpdateCaseAfterInitialGenerationInput = {
   aiDraft: string;
   actorUserId: string;
   suggestedTitle?: string;
+  tags?: import("@/lib/domain/case-tags").CaseTags;
 };
 
 type ConfirmRevisionInput = {
@@ -410,6 +411,19 @@ export async function updateCaseAfterInitialGeneration(
         generationStatus: GenerationStatus.SUCCEEDED,
         generationError: null,
         generationFinishedAt: new Date(),
+        ...(input.tags
+          ? {
+              productLine: input.tags.productLine ?? null,
+              organism: input.tags.organism ?? null,
+              application: input.tags.application ?? null,
+              analysisDepth: input.tags.analysisDepth ?? null,
+              sampleTypes: input.tags.sampleTypes ?? [],
+              platforms: input.tags.platforms ?? [],
+              keywordTags: input.tags.keywordTags ?? [],
+              tagsGeneratedAt: new Date(),
+              tagsModel: process.env.AI_MODEL ?? null,
+            }
+          : {}),
       },
     });
 

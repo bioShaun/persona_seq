@@ -1,3 +1,4 @@
+import { CaseTagsSchema } from "@/lib/domain/case-tags";
 import { buildInitialProposalPrompt, buildRevisionProposalPrompt } from "./prompts";
 import type {
   InitialProposalInput,
@@ -21,6 +22,7 @@ export async function generateInitialProposalDraft(
       extractSection(text, "B.") ?? "AI 未识别出缺失信息。",
     proposalDraft: extractSection(text, "C.") ?? text,
     suggestedTitle: suggestedTitle ?? undefined,
+    tags: parseTags(text),
   };
 }
 
@@ -40,7 +42,7 @@ export async function generateRevisionProposalDraft(
 }
 
 function extractSection(text: string, marker: string) {
-  const headingRegex = /^\s*(A\.|B\.|C\.)/gm;
+  const headingRegex = /^\s*(A\.|B\.|C\.|D\.|E\.)/gm;
   const headings = [...text.matchAll(headingRegex)].map((match) => ({
     marker: match[1],
     index: match.index ?? 0,
@@ -58,4 +60,34 @@ function extractSection(text: string, marker: string) {
   }
 
   return text.slice(current.index, endExclusive).trim();
+}
+
+export function parseTags(text: string): ProposalDraftResult["tags"] {
+  const section = extractSection(text, "E.");
+  if (section) {
+    try {
+      const jsonStart = section.indexOf("{");
+      if (jsonStart !== -1) {
+        const parsed = JSON.parse(section.slice(jsonStart));
+        return CaseTagsSchema.parse(parsed);
+      }
+    } catch {
+    }
+
+    return parseTagsFromJson(section);
+  }
+
+  return parseTagsFromJson(text);
+}
+
+export function parseTagsFromJson(text: string): ProposalDraftResult["tags"] {
+  try {
+    const trimmed = text.trim();
+    const jsonStart = trimmed.indexOf("{");
+    if (jsonStart === -1) return undefined;
+    const parsed = JSON.parse(trimmed.slice(jsonStart));
+    return CaseTagsSchema.parse(parsed);
+  } catch {
+    return undefined;
+  }
 }

@@ -63,6 +63,15 @@ model ProposalCase {
   generationFinishedAt  DateTime?
   currentRevisionNumber Int            @default(1)
   finalOutcome          FinalOutcome?
+  productLine           String?
+  organism              String?
+  application           String?
+  analysisDepth         String?
+  sampleTypes           String[]
+  platforms             String[]
+  keywordTags           String[]
+  tagsGeneratedAt       DateTime?
+  tagsModel             String?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -78,6 +87,9 @@ model ProposalCase {
   @@index([pmUserId])
   @@index([analystUserId])
   @@index([updatedAt])
+  @@index([productLine])
+  @@index([organism])
+  @@index([application])
 }
 
 model Revision {
