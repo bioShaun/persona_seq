@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CaseTagsSchema } from "@/lib/domain/case-tags";
 
 const requiredString = (label: string) =>
   z.string().trim().min(1, `${label} is required`);
@@ -96,4 +97,32 @@ export function parseCreateRevisionFromFeedbackInput(formData: FormData) {
     proposalCaseId: readString(formData, "proposalCaseId"),
     customerFeedbackText: readString(formData, "customerFeedbackText"),
   });
+}
+
+const updateCaseTagsSchema = z.object({
+  proposalCaseId: requiredString("proposalCaseId"),
+});
+
+export function parseUpdateCaseTagsInput(formData: FormData) {
+  const { proposalCaseId } = parseFormData(updateCaseTagsSchema, {
+    proposalCaseId: readString(formData, "proposalCaseId"),
+  });
+
+  const tagsRaw: Record<string, unknown> = {};
+  for (const key of [
+    "productLine",
+    "organism",
+    "application",
+    "analysisDepth",
+  ]) {
+    const val = readString(formData, key);
+    if (val !== undefined) tagsRaw[key] = val || null;
+  }
+  for (const key of ["sampleTypes", "platforms", "keywordTags"]) {
+    const val = readString(formData, key);
+    if (val !== undefined) tagsRaw[key] = val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  }
+
+  const tags = CaseTagsSchema.parse(tagsRaw);
+  return { proposalCaseId, tags };
 }

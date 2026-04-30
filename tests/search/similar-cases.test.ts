@@ -14,6 +14,7 @@ import {
   buildSimilarCaseSearchText,
   findSimilarAcceptedCases,
   findSimilarAcceptedCasesSafely,
+  findSimilarCasesV2Safely,
   extractSimilarCaseSearchTerms,
   normalizeSearchTerm,
 } from "@/lib/search/similar-cases";
@@ -196,5 +197,39 @@ describe("similar case search", () => {
     } finally {
       stderr.mockRestore();
     }
+  });
+
+  it("findSimilarCasesV2Safely falls back to ILIKE when embedding is null", async () => {
+    findManyMock.mockResolvedValueOnce([
+      {
+        id: "case-fallback",
+        title: "Fallback case",
+        customerName: "ACME",
+        requirementSummary: "Some summary",
+        originalRequestText: "Some request",
+        updatedAt: new Date("2026-04-01"),
+        revisions: [],
+      },
+    ]);
+
+    const { results, usedFallback } = await findSimilarCasesV2Safely({
+      excludeCaseId: "case-current",
+      queryEmbedding: null,
+      queryTags: {
+        organism: "小麦",
+        productLine: "BSA-seq",
+        customerName: "ACME",
+        application: null,
+        keywordTags: [],
+        analysisDepth: null,
+        sampleTypes: [],
+      },
+      originalRequestText: "alpha",
+      requirementSummary: null,
+    });
+
+    expect(usedFallback).toBe(true);
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe("case-fallback");
   });
 });

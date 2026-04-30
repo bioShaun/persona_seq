@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SimilarCasesPanel } from "@/components/similar-cases-panel";
+import { SimilarCasesPanel, type SimilarCaseItem } from "@/components/similar-cases-panel";
 
 export function SimilarCasesDrawer({
   cases,
+  caseId,
 }: {
-  cases: React.ComponentProps<typeof SimilarCasesPanel>["cases"];
+  cases: SimilarCaseItem[];
+  caseId: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -32,7 +34,7 @@ export function SimilarCasesDrawer({
           isOpen ? "w-80 opacity-100" : "w-0 opacity-0"
         }`}
       >
-        <SimilarCasesPanel cases={cases} />
+        <SimilarCasesPanel cases={cases} caseId={caseId} />
       </div>
     </div>
   );

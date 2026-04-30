@@ -77,9 +77,45 @@ export async function regenerateProposalDraft(
     });
   });
 
+  // Query AuditLog for referenced similar cases (few-shot injection)
+  const referencedLogs = await prisma.auditLog.findMany({
+    where: {
+      proposalCaseId: proposalCase.id,
+      action: "similar_case_referenced",
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: { metadata: true },
+  });
+
+  const referencedCaseIds = [...new Set(
+    referencedLogs
+      .map((log) => {
+        const meta = log.metadata as { targetCaseId?: string } | null;
+        return meta?.targetCaseId;
+      })
+      .filter((id): id is string => Boolean(id)),
+  )];
+
+  let referencedCaseTexts: string[] = [];
+  if (referencedCaseIds.length > 0) {
+    const referencedCases = await prisma.revision.findMany({
+      where: {
+        proposalCaseId: { in: referencedCaseIds },
+      },
+      orderBy: { revisionNumber: "desc" },
+      distinct: ["proposalCaseId"],
+      select: { analystConfirmedText: true },
+    });
+    referencedCaseTexts = referencedCases
+      .map((r) => r.analystConfirmedText)
+      .filter((t): t is string => Boolean(t?.trim()));
+  }
+
   try {
     const draft = await generateInitialProposalDraft(provider, {
       originalRequestText: proposalCase.originalRequestText,
+      referencedCaseTexts,
     });
 
     const stateChanged = await prisma.$transaction(async (tx) => {

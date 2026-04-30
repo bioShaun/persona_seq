@@ -37,6 +37,11 @@ export default async function CasesPage() {
           status: c.status,
           currentRevisionNumber: c.currentRevisionNumber,
           updatedAt: formatDate(c.updatedAt),
+          organism: c.organism,
+          productLine: c.productLine,
+          application: c.application,
+          analysisDepth: c.analysisDepth,
+          keywordTags: c.keywordTags,
         }))}
       />
     </section>
