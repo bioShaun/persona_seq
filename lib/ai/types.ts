@@ -2,6 +2,7 @@ import type { CaseTags } from "@/lib/domain/case-tags";
 
 export type InitialProposalInput = {
   originalRequestText: string;
+  referencedCaseTexts?: string[];
 };
 
 export type RevisionProposalInput = {

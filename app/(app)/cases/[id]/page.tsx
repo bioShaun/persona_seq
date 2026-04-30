@@ -332,7 +332,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
         <RevisionTimeline revisions={[...proposalCase.revisions].reverse()} />
       </div>
 
-      <SimilarCasesDrawer cases={similarCases} />
+      <SimilarCasesDrawer cases={similarCases} caseId={proposalCase.id} />
     </section>
   );
 }

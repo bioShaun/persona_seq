@@ -10,13 +10,22 @@ const proposalStructure = [
   "7. 需要客户补充确认的问题",
 ].join("\n");
 
-export function buildInitialProposalPrompt(input: InitialProposalInput) {
+export function buildInitialProposalPrompt(
+  input: InitialProposalInput & { referencedCaseTexts?: string[] },
+) {
   return [
     "你是资深生物信息分析方案顾问。请把客户的原始需求整理成专业、清晰、可交付的分析方案草稿。",
     "",
     "客户原始需求:",
     input.originalRequestText,
     "",
+    ...(input.referencedCaseTexts && input.referencedCaseTexts.length > 0
+      ? [
+          "以下相似案例的已确认方案供参考（few-shot 示例）：",
+          ...input.referencedCaseTexts.map((text, i) => `参考案例 ${i + 1}:\n${text}`),
+          "",
+        ]
+      : []),
       "请输出以下四部分:",
       "A. 需求摘要",
       "B. 缺失信息清单",

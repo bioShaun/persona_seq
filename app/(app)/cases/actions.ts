@@ -192,6 +192,46 @@ export async function createRevisionFromFeedback(formData: FormData) {
   revalidatePath(`/cases/${input.proposalCaseId}`);
 }
 
+export async function logSimilarCaseAction(formData: FormData) {
+  const proposalCaseId = formData.get("proposalCaseId");
+  const targetCaseId = formData.get("targetCaseId");
+  const action = formData.get("action"); // "similar_case_clicked" or "similar_case_referenced"
+  const rank = formData.get("rank");
+  const matchedDimensions = formData.get("matchedDimensions");
+  const semanticScore = formData.get("semanticScore");
+
+  if (
+    typeof proposalCaseId !== "string" ||
+    typeof targetCaseId !== "string" ||
+    (action !== "similar_case_clicked" && action !== "similar_case_referenced")
+  ) {
+    return;
+  }
+
+  const currentUser = await getCurrentUser().catch(() => null);
+  if (!currentUser) return;
+
+  const { prisma } = await import("@/lib/db/prisma");
+  await prisma.auditLog.create({
+    data: {
+      proposalCaseId,
+      actorUserId: currentUser.id,
+      action,
+      metadata: {
+        sourceCaseId: proposalCaseId,
+        targetCaseId,
+        rank: typeof rank === "string" ? Number(rank) : null,
+        matchedDimensions: typeof matchedDimensions === "string"
+          ? matchedDimensions.split(",").filter(Boolean)
+          : [],
+        semanticScore: typeof semanticScore === "string" ? Number(semanticScore) : null,
+      },
+    },
+  }).catch((error) => {
+    console.error("Failed to log similar case action:", error);
+  });
+}
+
 export async function updateCaseTags(formData: FormData) {
   const input = parseUpdateCaseTagsInput(formData);
 
