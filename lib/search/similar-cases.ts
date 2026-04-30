@@ -357,7 +357,7 @@ export async function findSimilarCasesV2Safely(input: {
       semanticScore: 0,
       totalScore: r.score,
       matchedDimensions: [],
-      isSameCustomer: false,
+      isSameCustomer: r.customerName === input.queryTags.customerName,
     }));
     return { results: mapped, usedFallback: true };
   } catch (error) {

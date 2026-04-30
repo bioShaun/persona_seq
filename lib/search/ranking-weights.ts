@@ -85,7 +85,7 @@ export function computeRerankScore(
 
   const recencyScore = recencyDecay(candidate.updatedAt, now);
 
-  const isAccepted = candidate.status === "ACCEPTED";
+  const isAccepted = candidate.status === "ACCEPTED" || candidate.status === "accepted";
   const statusPenalty = isAccepted ? 0 : 1;
 
   const totalScore =
