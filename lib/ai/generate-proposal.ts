@@ -46,7 +46,8 @@ export async function generateRevisionProposalDraft(
 }
 
 function extractSection(text: string, marker: string) {
-  const headingRegex = /^\s*(A\.|B\.|C\.|D\.|E\.)/gm;
+  // Support markdown bold headings like "**D. 建议标题**"
+  const headingRegex = /^\s*(?:\*\*)?\s*(A\.|B\.|C\.|D\.|E\.)/gm;
   const headings = [...text.matchAll(headingRegex)].map((match) => ({
     marker: match[1],
     index: match.index ?? 0,
@@ -77,16 +78,18 @@ function extractSectionBody(text: string, marker: string): string | null {
 export function parseTags(text: string): ProposalDraftResult["tags"] {
   const section = extractSection(text, "E.");
   if (section) {
+    // Strip markdown code fences (```json / ```) so JSON.parse succeeds
+    const cleaned = section.replace(/```(?:json)?\n?/g, "");
     try {
-      const jsonStart = section.indexOf("{");
+      const jsonStart = cleaned.indexOf("{");
       if (jsonStart !== -1) {
-        const parsed = JSON.parse(section.slice(jsonStart));
+        const parsed = JSON.parse(cleaned.slice(jsonStart));
         return CaseTagsSchema.parse(parsed);
       }
     } catch {
     }
 
-    return parseTagsFromJson(section);
+    return parseTagsFromJson(cleaned);
   }
 
   return parseTagsFromJson(text);
