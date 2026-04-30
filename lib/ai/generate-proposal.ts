@@ -13,7 +13,7 @@ export async function generateInitialProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildInitialProposalPrompt(input));
 
-  const suggestedTitle = extractSection(text, "D.");
+  const suggestedTitle = extractTitle(text);
   return {
     requirementSummary:
       extractSection(text, "A.") ??
@@ -32,12 +32,16 @@ export async function generateRevisionProposalDraft(
 ): Promise<ProposalDraftResult> {
   const text = await provider.generateText(buildRevisionProposalPrompt(input));
 
+  const suggestedTitle = extractTitle(text);
+
   return {
     requirementSummary: "修订轮次沿用原始需求摘要。",
     missingInformation:
       extractSection(text, "C.") ?? "AI 未识别出新的待确认问题。",
     proposalDraft: extractSection(text, "B.") ?? text,
     revisionNotes: extractSection(text, "A.") ?? "AI 已根据客户反馈生成修订草稿。",
+    suggestedTitle: suggestedTitle ?? undefined,
+    tags: parseTags(text),
   };
 }
 
@@ -60,6 +64,18 @@ function extractSection(text: string, marker: string) {
   }
 
   return text.slice(current.index, endExclusive).trim();
+}
+
+function extractTitle(text: string): string | null {
+  const section = extractSection(text, "D.");
+  if (!section) return null;
+
+  const lines = section.split("\n");
+  if (lines.length > 1) {
+    const body = lines.slice(1).join("\n").trim();
+    if (body) return body;
+  }
+  return lines[0].replace(/^D\.\s*/, "").trim() || null;
 }
 
 export function parseTags(text: string): ProposalDraftResult["tags"] {

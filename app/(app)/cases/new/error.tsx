@@ -37,7 +37,6 @@ export default function NewCaseError({ error, reset }: NewCaseErrorProps) {
             <Button
               type="button"
               onClick={reset}
-              className="bg-cyan-500 text-slate-950 hover:bg-cyan-400"
             >
               <RefreshCw className="mr-2 size-4" aria-hidden />
               重试
