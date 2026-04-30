@@ -829,6 +829,24 @@ export async function persistFeedbackRevision(
   });
 }
 
+export async function saveEmbedding(caseId: string, embedding: number[]) {
+  return prisma.$executeRaw`
+    UPDATE "ProposalCase"
+    SET embedding = ${`[${embedding.join(",")}]`}::vector,
+        "updatedAt" = NOW()
+    WHERE id = ${caseId}
+  `;
+}
+
+export async function invalidateEmbedding(caseId: string) {
+  return prisma.$executeRaw`
+    UPDATE "ProposalCase"
+    SET embedding = NULL,
+        "updatedAt" = NOW()
+    WHERE id = ${caseId}
+  `;
+}
+
 export function assertCaseTagsEditable(status: ProposalStatus) {
   if (status === ProposalStatus.ACCEPTED || status === ProposalStatus.CANCELED) {
     throw new Error("标签不可编辑：案例已归档");

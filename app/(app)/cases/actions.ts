@@ -15,15 +15,23 @@ import {
   assertCaseTagsEditable,
   confirmRevision,
   createProposalCase,
+  getProposalCaseDetail,
+  invalidateEmbedding,
   loadCaseWithRevision,
   persistFeedbackRevision,
   markCustomerAccepted,
   markCustomerCanceled,
   markSentToCustomer,
   reExtractCaseTags as reExtractCaseTagsInRepo,
+  saveEmbedding,
   updateCaseTags as updateCaseTagsInRepo,
   updateCaseTitle as updateCaseTitleInRepo,
 } from "@/lib/db/proposal-repository";
+import {
+  buildEmbeddingInput,
+  generateEmbedding,
+  getEmbeddingProvider,
+} from "@/lib/ai/embedding";
 import {
   parseConfirmCurrentRevisionInput,
   parseCreateCaseInput,
@@ -83,7 +91,30 @@ export async function confirmCurrentRevision(formData: FormData) {
     ...input,
     actorUserId: currentUser.id,
   });
-  // Full navigation clears RSC/cache for this segment; revalidate alone can leave stale client state after mutate.
+
+  // Generate embedding after analyst confirms — fire-and-forget on failure
+  void (async () => {
+    try {
+      const detail = await getProposalCaseDetail(input.proposalCaseId);
+      if (!detail) return;
+      const currentRev = detail.revisions.find(
+        (r) => r.revisionNumber === detail.currentRevisionNumber,
+      );
+      const text = buildEmbeddingInput(
+        detail.title,
+        detail.requirementSummary,
+        currentRev?.analystConfirmedText ?? input.analystConfirmedText,
+      );
+      const provider = getEmbeddingProvider();
+      const embedding = await generateEmbedding(provider, text);
+      if (embedding) {
+        await saveEmbedding(input.proposalCaseId, embedding);
+      }
+    } catch (error) {
+      console.error("Embedding generation failed after confirm:", error);
+    }
+  })();
+
   redirect(`/cases/${input.proposalCaseId}`);
 }
 
@@ -151,6 +182,11 @@ export async function createRevisionFromFeedback(formData: FormData) {
     proposalCaseId: input.proposalCaseId,
     actorUserId: currentUser.id,
     revisionData,
+  });
+
+  // Invalidate stale embedding when content changes
+  void invalidateEmbedding(input.proposalCaseId).catch((error) => {
+    console.error("Embedding invalidation failed:", error);
   });
 
   revalidatePath(`/cases/${input.proposalCaseId}`);
