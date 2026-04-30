@@ -251,6 +251,11 @@ export async function reExtractCaseTagsAction(formData: FormData) {
     throw new Error("proposalCaseId is required");
   }
 
+  const currentUser = await getCurrentUser();
+  if (currentUser.role !== "ADMIN") {
+    throw new Error("管理员权限不足");
+  }
+
   const proposalCase = await loadCaseWithRevision(proposalCaseId);
   if (!proposalCase) {
     throw new Error("案例不存在");
