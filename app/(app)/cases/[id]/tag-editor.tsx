@@ -59,7 +59,7 @@ export function TagEditor({ proposalCaseId, tags, isAdmin, isEditable }: TagEdit
 
   const handleEdit = (key: string, current: string | string[] | null) => {
     setEditingKey(key);
-    setDraft(current ?? (Array.isArray(current) ? [] : ""));
+    setDraft(current ?? "");
   };
 
   const handleSave = (key: string) => {
