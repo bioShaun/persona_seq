@@ -15,14 +15,14 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getProposalCaseDetail } from "@/lib/db/proposal-repository";
+import { getProposalCaseDetail, getCaseEmbedding } from "@/lib/db/proposal-repository";
 import {
   canConfirmCurrentRevision,
   canSendCurrentRevision,
   canProcessCustomerFeedback,
   isEditableCase,
 } from "@/lib/domain/proposal-ui-state";
-import { findSimilarAcceptedCasesSafely } from "@/lib/search/similar-cases";
+import { findSimilarCasesV2Safely } from "@/lib/search/similar-cases";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { RegenerateProposalButton } from "./regenerate-proposal-button";
 import { SimilarCasesDrawer } from "./similar-cases-drawer";
@@ -52,13 +52,28 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     proposalCase.generationStatus === "SUCCEEDED" ||
     proposalCase.status !== "DRAFTING" ||
     proposalCase.revisions.length > 0;
-  const similarCases = initialDraftWorkflowReady
-    ? await findSimilarAcceptedCasesSafely({
+
+  const queryEmbedding = initialDraftWorkflowReady
+    ? await getCaseEmbedding(proposalCase.id)
+    : null;
+
+  const { results: similarCases } = initialDraftWorkflowReady
+    ? await findSimilarCasesV2Safely({
         excludeCaseId: proposalCase.id,
+        queryEmbedding,
+        queryTags: {
+          organism: proposalCase.organism,
+          productLine: proposalCase.productLine,
+          customerName: proposalCase.customerName,
+          application: proposalCase.application,
+          keywordTags: proposalCase.keywordTags,
+          analysisDepth: proposalCase.analysisDepth,
+          sampleTypes: proposalCase.sampleTypes,
+        },
         originalRequestText: proposalCase.originalRequestText,
         requirementSummary: proposalCase.requirementSummary,
       })
-    : [];
+    : { results: [], usedFallback: false };
   const canConfirmRevision = canConfirmCurrentRevision(proposalCase.status);
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser.role === "ADMIN";

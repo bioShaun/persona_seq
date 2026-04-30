@@ -829,6 +829,21 @@ export async function persistFeedbackRevision(
   });
 }
 
+export async function getCaseEmbedding(caseId: string): Promise<number[] | null> {
+  const rows = await prisma.$queryRaw<{ embedding: string | null }[]>`
+    SELECT embedding::text AS embedding
+    FROM "ProposalCase"
+    WHERE id = ${caseId}
+  `;
+  const raw = rows[0]?.embedding;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 export async function saveEmbedding(caseId: string, embedding: number[]) {
   return prisma.$executeRaw`
     UPDATE "ProposalCase"
