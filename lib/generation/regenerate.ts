@@ -84,7 +84,7 @@ export async function regenerateProposalDraft(
       action: "similar_case_referenced",
     },
     orderBy: { createdAt: "desc" },
-    take: 1,
+    take: 5,
     select: { metadata: true },
   });
 
