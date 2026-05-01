@@ -73,7 +73,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
         originalRequestText: proposalCase.originalRequestText,
         requirementSummary: proposalCase.requirementSummary,
       })
-    : { results: [], usedFallback: false };
+    : { results: [] };
   const canConfirmRevision = canConfirmCurrentRevision(proposalCase.status);
   const currentUser = await getCurrentUser();
   const isAdmin = currentUser.role === "ADMIN";
