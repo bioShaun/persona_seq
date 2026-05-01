@@ -12,8 +12,11 @@ describe("AI proposal prompts", () => {
 
     expect(prompt).toContain("客户原始需求");
     expect(prompt).toContain("水稻转录组差异分析");
-    expect(prompt).toContain("需求摘要");
-    expect(prompt).toContain("需要客户补充确认的问题");
+    expect(prompt).toContain("requirementSummary");
+    expect(prompt).toContain("proposalDraft");
+    expect(prompt).toContain("tags");
+    expect(prompt).toContain("1. 客户需求理解");
+    expect(prompt).toContain("7. 需要客户补充确认的问题");
   });
 
   it("builds a revision prompt using previous confirmed proposal and feedback", () => {
@@ -26,22 +29,26 @@ describe("AI proposal prompts", () => {
     expect(prompt).toContain("上一版已确认方案");
     expect(prompt).toContain("客户最新反馈");
     expect(prompt).toContain("WGCNA");
-    expect(prompt).toContain("修订说明");
-    expect(prompt).toContain("修订后完整方案草稿");
+    expect(prompt).toContain("revisionNotes");
+    expect(prompt).toContain("proposalDraft");
+    expect(prompt).toContain("missingInformation");
+    expect(prompt).toContain("suggestedTitle");
+    expect(prompt).toContain("tags");
     expect(prompt).toContain("不要只输出改动片段");
     expect(prompt).toContain("1. 客户需求理解");
     expect(prompt).toContain("7. 需要客户补充确认的问题");
   });
 
-  it("revision prompt requests suggested title (section D)", () => {
+  it("revision prompt describes field-level output instead of A-E sections", () => {
     const prompt = buildRevisionProposalPrompt({
       originalRequestText: "水稻转录组",
       previousConfirmedProposal: "上一版方案",
       customerFeedbackText: "增加 WGCNA",
     });
 
-    expect(prompt).toContain("D. 建议标题");
-    expect(prompt).toContain("五部分");
+    expect(prompt).toContain("请返回一个结构化对象");
+    expect(prompt).not.toContain("A. 修订说明");
+    expect(prompt).not.toContain("B. 修订后完整方案草稿");
   });
 
   it("both prompts instruct AI to leave uncertain tags as null", () => {

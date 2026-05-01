@@ -102,7 +102,6 @@ export class OpenAiChatProposalAiProvider implements ProposalAiProvider {
     schemaName: string,
   ): Promise<T> {
     const jsonSchema = zodToJsonSchema(schema, {
-      name: schemaName,
       target: "openAi",
     }) as Record<string, unknown>;
 

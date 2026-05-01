@@ -20,5 +20,10 @@ export const RevisionProposalJsonSchema = z.object({
   ...SharedProposalFieldsSchema,
 });
 
+export const TagExtractionSchema = z.object({
+  tags: CaseTagsSchema,
+});
+
 export type InitialProposalJson = z.infer<typeof InitialProposalJsonSchema>;
 export type RevisionProposalJson = z.infer<typeof RevisionProposalJsonSchema>;
+export type TagExtractionJson = z.infer<typeof TagExtractionSchema>;

@@ -5,8 +5,10 @@ import {
   type ProposalCase,
   type Revision,
 } from "@prisma/client";
+import { TagExtractionSchema } from "@/lib/ai/proposal-schema";
+import type { ProposalAiProvider } from "@/lib/ai/types";
 import { prisma } from "@/lib/db/prisma";
-
+import { hasAnyMeaningfulTag, type CaseTags } from "@/lib/domain/case-tags";
 
 type CreateProposalCaseInput = {
   title: string;
@@ -895,19 +897,13 @@ export function assertCaseTagsEditable(status: ProposalStatus) {
   }
 }
 
-type UpdateCaseTagsInput = {
-  productLine?: string | null;
-  organism?: string | null;
-  application?: string | null;
-  analysisDepth?: string | null;
-  sampleTypes?: string[];
-  platforms?: string[];
-  keywordTags?: string[];
-};
+type UpdateCaseTagsInput = CaseTags;
 
 export async function reExtractCaseTags(
   caseId: string,
-  provider: { generateText: (prompt: string) => Promise<string> },
+  provider?:
+    | Pick<ProposalAiProvider, "generateJson">
+    | Pick<ProposalAiProvider, "generateText">,
 ) {
   const proposalCase = await prisma.proposalCase.findUnique({
     where: { id: caseId },
@@ -929,16 +925,36 @@ export async function reExtractCaseTags(
 
   const confirmedText = proposalCase.revisions[0]?.analystConfirmedText ?? "";
   const prompt = `请从以下案例信息中提取结构化标签（JSON格式）：\n\n客户原始需求：${proposalCase.originalRequestText}\n需求摘要：${proposalCase.requirementSummary ?? "无"}\n确认方案：${confirmedText}\n\n请输出JSON对象，包含以下字段（均可选）：productLine, organism, application, analysisDepth, sampleTypes, platforms, keywordTags`;
+  const aiProvider =
+    provider ??
+    (await import("@/lib/ai/get-proposal-ai-provider")).getProposalAiProvider();
+  let tags: CaseTags | undefined;
 
-  const text = await provider.generateText(prompt);
-
-  const { parseTagsFromJson } = await import("@/lib/ai/generate-proposal");
-  const tags = parseTagsFromJson(text);
+  if ("generateJson" in aiProvider) {
+    try {
+      tags = (
+        await aiProvider.generateJson(prompt, TagExtractionSchema, "TagExtraction")
+      ).tags;
+    } catch {
+      tags = undefined;
+    }
+  } else {
+    try {
+      const text = await aiProvider.generateText(prompt);
+      const jsonStart = text.indexOf("{");
+      if (jsonStart !== -1) {
+        const parsed = JSON.parse(text.slice(jsonStart)) as unknown;
+        tags = TagExtractionSchema.parse({ tags: parsed }).tags;
+      }
+    } catch {
+      tags = undefined;
+    }
+  }
 
   return prisma.proposalCase.update({
     where: { id: caseId },
     data: {
-      ...(tags
+      ...(tags && hasAnyMeaningfulTag(tags)
         ? {
             productLine: tags.productLine ?? null,
             organism: tags.organism ?? null,
@@ -966,9 +982,9 @@ export async function updateCaseTags(
       ...(tags.organism !== undefined ? { organism: tags.organism } : {}),
       ...(tags.application !== undefined ? { application: tags.application } : {}),
       ...(tags.analysisDepth !== undefined ? { analysisDepth: tags.analysisDepth } : {}),
-      ...(tags.sampleTypes !== undefined ? { sampleTypes: tags.sampleTypes } : {}),
-      ...(tags.platforms !== undefined ? { platforms: tags.platforms } : {}),
-      ...(tags.keywordTags !== undefined ? { keywordTags: tags.keywordTags } : {}),
+      ...(tags.sampleTypes !== undefined ? { sampleTypes: tags.sampleTypes ?? [] } : {}),
+      ...(tags.platforms !== undefined ? { platforms: tags.platforms ?? [] } : {}),
+      ...(tags.keywordTags !== undefined ? { keywordTags: tags.keywordTags ?? [] } : {}),
       updatedAt: new Date(),
     },
   });

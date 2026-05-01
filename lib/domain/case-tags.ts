@@ -75,9 +75,21 @@ export const CaseTagsSchema = z.object({
   organism: z.enum(ORGANISMS).nullable().optional(),
   application: z.enum(APPLICATIONS).nullable().optional(),
   analysisDepth: z.enum(ANALYSIS_DEPTHS).nullable().optional(),
-  sampleTypes: z.array(z.enum(SAMPLE_TYPES)).optional(),
-  platforms: z.array(z.enum(PLATFORMS)).optional(),
-  keywordTags: z.array(z.string()).optional(),
+  sampleTypes: z.array(z.enum(SAMPLE_TYPES)).nullable().optional(),
+  platforms: z.array(z.enum(PLATFORMS)).nullable().optional(),
+  keywordTags: z.array(z.string()).nullable().optional(),
 });
 
 export type CaseTags = z.infer<typeof CaseTagsSchema>;
+
+export function hasAnyMeaningfulTag(tags: CaseTags): boolean {
+  return !!(
+    tags.productLine ||
+    tags.organism ||
+    tags.application ||
+    tags.analysisDepth ||
+    (tags.sampleTypes && tags.sampleTypes.length > 0) ||
+    (tags.platforms && tags.platforms.length > 0) ||
+    (tags.keywordTags && tags.keywordTags.length > 0)
+  );
+}

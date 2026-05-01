@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import { TagExtractionSchema } from "../lib/ai/proposal-schema";
 import { OpenAiChatProposalAiProvider } from "../lib/ai/openai-chat-provider";
 import { MockProposalAiProvider } from "../lib/ai/mock-provider";
 import type { ProposalAiProvider } from "../lib/ai/types";
-import { parseTags } from "../lib/ai/generate-proposal";
-import { PRODUCT_LINES, ORGANISMS, APPLICATIONS, ANALYSIS_DEPTHS, SAMPLE_TYPES, PLATFORMS } from "../lib/domain/case-tags";
+import { PRODUCT_LINES, ORGANISMS, APPLICATIONS, ANALYSIS_DEPTHS, SAMPLE_TYPES, PLATFORMS, hasAnyMeaningfulTag } from "../lib/domain/case-tags";
 
 dotenv.config();
 
@@ -32,11 +32,14 @@ async function main() {
 
     try {
       const text = buildTagExtractionText(c.originalRequestText, c.requirementSummary);
-      const aiText = await provider.generateText(text);
-      const tags = parseTags(aiText);
+      const { tags } = await provider.generateJson(
+        text,
+        TagExtractionSchema,
+        "TagExtraction",
+      );
 
-      if (!tags) {
-        console.log("  ⚠️  Failed to parse tags from AI response, skipping.");
+      if (!hasAnyMeaningfulTag(tags)) {
+        console.log("  ⚠️  AI returned no meaningful tags, skipping.");
         continue;
       }
 
@@ -80,17 +83,16 @@ function buildTagExtractionText(originalText: string, summary: string | null): s
   ];
 
   return [
-    "你是生物信息分析专家。请根据以下案例内容，提取结构化标签并输出为 JSON。",
+    "你是生物信息分析专家。请根据以下案例内容提取结构化标签。",
     "",
     "案例内容:",
     originalText,
     summary ? `\n需求摘要: ${summary}` : "",
     "",
-    "可用枚举值:",
+    "请返回一个对象，其中 `tags` 字段必须包含以下标签字段，并只能使用这些枚举值：",
     ...enumLines,
     "",
-    "请只输出 JSON 对象，不要包含任何其他文字。格式:",
-    '{"productLine":"...","organism":"...","application":"...","analysisDepth":"...","sampleTypes":["..."],"platforms":["..."],"keywordTags":["..."]}',
+    "只填写能从案例内容中明确推断的字段，不确定的字段设为 null 或空数组。",
   ].join("\n");
 }
 
@@ -106,6 +108,10 @@ function getProvider(): ProposalAiProvider {
     const apiKey = (process.env.AI_API_KEY ?? "").trim();
     if (!apiKey) throw new Error("AI_PROVIDER=openai requires AI_API_KEY");
 
+    const jsonModeRaw = (process.env.AI_JSON_MODE ?? "json_schema").trim().toLowerCase();
+    const jsonMode: "json_schema" | "json_object" =
+      jsonModeRaw === "json_object" ? "json_object" : "json_schema";
+
     return new OpenAiChatProposalAiProvider({
       apiKey,
       baseUrl: (process.env.AI_BASE_URL ?? "https://api.openai.com/v1").trim().replace(/\/+$/, ""),
@@ -113,6 +119,7 @@ function getProvider(): ProposalAiProvider {
       timeoutMs: parseIntSafe(process.env.AI_TIMEOUT_MS, 120_000),
       maxTokens: parseIntSafe(process.env.AI_MAX_TOKENS, 5000),
       temperature: parseFloatSafe(process.env.AI_TEMPERATURE, 0.35),
+      jsonMode,
     });
   }
 
