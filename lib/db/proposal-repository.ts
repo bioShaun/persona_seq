@@ -897,15 +897,7 @@ export function assertCaseTagsEditable(status: ProposalStatus) {
   }
 }
 
-type UpdateCaseTagsInput = {
-  productLine?: string | null;
-  organism?: string | null;
-  application?: string | null;
-  analysisDepth?: string | null;
-  sampleTypes?: string[];
-  platforms?: string[];
-  keywordTags?: string[];
-};
+type UpdateCaseTagsInput = CaseTags;
 
 export async function reExtractCaseTags(
   caseId: string,
@@ -936,17 +928,7 @@ export async function reExtractCaseTags(
   const aiProvider =
     provider ??
     (await import("@/lib/ai/get-proposal-ai-provider")).getProposalAiProvider();
-  let tags:
-    | {
-        productLine?: string | null;
-        organism?: string | null;
-        application?: string | null;
-        analysisDepth?: string | null;
-        sampleTypes?: string[];
-        platforms?: string[];
-        keywordTags?: string[];
-      }
-    | undefined;
+  let tags: CaseTags | undefined;
 
   if ("generateJson" in aiProvider) {
     try {
@@ -1000,9 +982,9 @@ export async function updateCaseTags(
       ...(tags.organism !== undefined ? { organism: tags.organism } : {}),
       ...(tags.application !== undefined ? { application: tags.application } : {}),
       ...(tags.analysisDepth !== undefined ? { analysisDepth: tags.analysisDepth } : {}),
-      ...(tags.sampleTypes !== undefined ? { sampleTypes: tags.sampleTypes } : {}),
-      ...(tags.platforms !== undefined ? { platforms: tags.platforms } : {}),
-      ...(tags.keywordTags !== undefined ? { keywordTags: tags.keywordTags } : {}),
+      ...(tags.sampleTypes !== undefined ? { sampleTypes: tags.sampleTypes ?? [] } : {}),
+      ...(tags.platforms !== undefined ? { platforms: tags.platforms ?? [] } : {}),
+      ...(tags.keywordTags !== undefined ? { keywordTags: tags.keywordTags ?? [] } : {}),
       updatedAt: new Date(),
     },
   });

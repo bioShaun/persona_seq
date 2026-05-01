@@ -104,7 +104,11 @@ export class MockProposalAiProvider implements ProposalAiProvider {
     ].join("\n");
   }
 
-  async generateJson<T>(_prompt: string, schema?: ZodType<T>): Promise<T> {
+  async generateJson<T>(
+    _prompt: string,
+    schema?: ZodType<T>,
+    _schemaName?: string,
+  ): Promise<T> {
     if (schema) {
       const mock = MOCK_JSON_BY_SCHEMA.get(schema);
       if (mock !== undefined) return mock as T;
