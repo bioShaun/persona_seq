@@ -108,6 +108,10 @@ function getProvider(): ProposalAiProvider {
     const apiKey = (process.env.AI_API_KEY ?? "").trim();
     if (!apiKey) throw new Error("AI_PROVIDER=openai requires AI_API_KEY");
 
+    const jsonModeRaw = (process.env.AI_JSON_MODE ?? "json_schema").trim().toLowerCase();
+    const jsonMode: "json_schema" | "json_object" =
+      jsonModeRaw === "json_object" ? "json_object" : "json_schema";
+
     return new OpenAiChatProposalAiProvider({
       apiKey,
       baseUrl: (process.env.AI_BASE_URL ?? "https://api.openai.com/v1").trim().replace(/\/+$/, ""),
@@ -115,6 +119,7 @@ function getProvider(): ProposalAiProvider {
       timeoutMs: parseIntSafe(process.env.AI_TIMEOUT_MS, 120_000),
       maxTokens: parseIntSafe(process.env.AI_MAX_TOKENS, 5000),
       temperature: parseFloatSafe(process.env.AI_TEMPERATURE, 0.35),
+      jsonMode,
     });
   }
 
