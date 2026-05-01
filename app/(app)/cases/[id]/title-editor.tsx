@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Check, Loader2, Pencil, RefreshCcw, X } from "lucide-react";
 import { updateCaseTitle } from "@/app/(app)/cases/actions";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,14 @@ export function TitleEditor({ proposalCaseId, initialTitle }: TitleEditorProps) 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
+  const [previousInitialTitle, setPreviousInitialTitle] = useState(initialTitle);
   const [draft, setDraft] = useState(initialTitle);
   const [regenerating, setRegenerating] = useState(false);
 
-  useEffect(() => {
+  if (initialTitle !== previousInitialTitle) {
+    setPreviousInitialTitle(initialTitle);
     setDraft(initialTitle);
-  }, [initialTitle]);
+  }
 
   const handleSave = async () => {
     if (!draft.trim() || draft === initialTitle) {
