@@ -1,4 +1,5 @@
 import type { CaseTags } from "@/lib/domain/case-tags";
+import type { ZodType } from "zod";
 
 export type InitialProposalInput = {
   originalRequestText: string;
@@ -22,4 +23,9 @@ export type ProposalDraftResult = {
 
 export interface ProposalAiProvider {
   generateText(prompt: string): Promise<string>;
+  generateJson<T>(
+    prompt: string,
+    schema: ZodType<T>,
+    schemaName: string,
+  ): Promise<T>;
 }
