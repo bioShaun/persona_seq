@@ -1,9 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import { TagExtractionSchema } from "../lib/ai/proposal-schema";
 import { OpenAiChatProposalAiProvider } from "../lib/ai/openai-chat-provider";
 import { MockProposalAiProvider } from "../lib/ai/mock-provider";
 import type { ProposalAiProvider } from "../lib/ai/types";
-import { parseTags } from "../lib/ai/generate-proposal";
 import { PRODUCT_LINES, ORGANISMS, APPLICATIONS, ANALYSIS_DEPTHS, SAMPLE_TYPES, PLATFORMS } from "../lib/domain/case-tags";
 
 dotenv.config();
@@ -32,8 +32,11 @@ async function main() {
 
     try {
       const text = buildTagExtractionText(c.originalRequestText, c.requirementSummary);
-      const aiText = await provider.generateText(text);
-      const tags = parseTags(aiText);
+      const { tags } = await provider.generateJson(
+        text,
+        TagExtractionSchema,
+        "TagExtraction",
+      );
 
       if (!tags) {
         console.log("  ⚠️  Failed to parse tags from AI response, skipping.");
@@ -80,17 +83,16 @@ function buildTagExtractionText(originalText: string, summary: string | null): s
   ];
 
   return [
-    "你是生物信息分析专家。请根据以下案例内容，提取结构化标签并输出为 JSON。",
+    "你是生物信息分析专家。请根据以下案例内容提取结构化标签。",
     "",
     "案例内容:",
     originalText,
     summary ? `\n需求摘要: ${summary}` : "",
     "",
-    "可用枚举值:",
+    "请返回一个对象，其中 `tags` 字段必须包含以下标签字段，并只能使用这些枚举值：",
     ...enumLines,
     "",
-    "请只输出 JSON 对象，不要包含任何其他文字。格式:",
-    '{"productLine":"...","organism":"...","application":"...","analysisDepth":"...","sampleTypes":["..."],"platforms":["..."],"keywordTags":["..."]}',
+    "只填写能从案例内容中明确推断的字段，不确定的字段设为 null 或空数组。",
   ].join("\n");
 }
 

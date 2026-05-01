@@ -1,4 +1,7 @@
-import { CaseTagsSchema } from "@/lib/domain/case-tags";
+import {
+  InitialProposalJsonSchema,
+  RevisionProposalJsonSchema,
+} from "./proposal-schema";
 import { buildInitialProposalPrompt, buildRevisionProposalPrompt } from "./prompts";
 import type {
   InitialProposalInput,
@@ -11,98 +14,25 @@ export async function generateInitialProposalDraft(
   provider: ProposalAiProvider,
   input: InitialProposalInput,
 ): Promise<ProposalDraftResult> {
-  const text = await provider.generateText(buildInitialProposalPrompt(input));
-
-  const suggestedTitle = extractSectionBody(text, "D.");
-  return {
-    requirementSummary:
-      extractSection(text, "A.") ??
-      "AI 已生成需求摘要，请分析人员确认。",
-    missingInformation:
-      extractSection(text, "B.") ?? "AI 未识别出缺失信息。",
-    proposalDraft: extractSection(text, "C.") ?? text,
-    suggestedTitle: suggestedTitle || undefined,
-    tags: parseTags(text),
-  };
+  return provider.generateJson(
+    buildInitialProposalPrompt(input),
+    InitialProposalJsonSchema,
+    "InitialProposal",
+  );
 }
 
 export async function generateRevisionProposalDraft(
   provider: ProposalAiProvider,
   input: RevisionProposalInput,
 ): Promise<ProposalDraftResult> {
-  const text = await provider.generateText(buildRevisionProposalPrompt(input));
-
-  const suggestedTitle = extractSectionBody(text, "D.");
+  const json = await provider.generateJson(
+    buildRevisionProposalPrompt(input),
+    RevisionProposalJsonSchema,
+    "RevisionProposal",
+  );
 
   return {
     requirementSummary: "修订轮次沿用原始需求摘要。",
-    missingInformation:
-      extractSection(text, "C.") ?? "AI 未识别出新的待确认问题。",
-    proposalDraft: extractSection(text, "B.") ?? text,
-    revisionNotes: extractSection(text, "A.") ?? "AI 已根据客户反馈生成修订草稿。",
-    suggestedTitle: suggestedTitle ?? undefined,
-    tags: parseTags(text),
+    ...json,
   };
-}
-
-function extractSection(text: string, marker: string) {
-  // Support markdown bold headings like "**D. 建议标题**"
-  const headingRegex = /^\s*(?:\*\*)?\s*(A\.|B\.|C\.|D\.|E\.)/gm;
-  const headings = [...text.matchAll(headingRegex)].map((match) => ({
-    marker: match[1],
-    index: match.index ?? 0,
-  }));
-  const current = headings.find((heading) => heading.marker === marker);
-
-  if (!current) return null;
-
-  const nextHeading = headings.find((heading) => heading.index > current.index);
-  const dashedLine = text.indexOf("\n---", current.index + marker.length);
-  let endExclusive: number | undefined = nextHeading?.index;
-
-  if (typeof endExclusive !== "number" && dashedLine > -1) {
-    endExclusive = dashedLine;
-  }
-
-  return text.slice(current.index, endExclusive).trim();
-}
-
-/** Like extractSection but strips the heading line, returning only the body. */
-function extractSectionBody(text: string, marker: string): string | null {
-  const section = extractSection(text, marker);
-  if (!section) return null;
-  const newlineIndex = section.indexOf("\n");
-  return newlineIndex === -1 ? "" : section.slice(newlineIndex + 1).trim();
-}
-
-export function parseTags(text: string): ProposalDraftResult["tags"] {
-  const section = extractSection(text, "E.");
-  if (section) {
-    // Strip markdown code fences (```json / ```) so JSON.parse succeeds
-    const cleaned = section.replace(/```(?:json)?\n?/g, "");
-    try {
-      const jsonStart = cleaned.indexOf("{");
-      if (jsonStart !== -1) {
-        const parsed = JSON.parse(cleaned.slice(jsonStart));
-        return CaseTagsSchema.parse(parsed);
-      }
-    } catch {
-    }
-
-    return parseTagsFromJson(cleaned);
-  }
-
-  return parseTagsFromJson(text);
-}
-
-export function parseTagsFromJson(text: string): ProposalDraftResult["tags"] {
-  try {
-    const trimmed = text.trim();
-    const jsonStart = trimmed.indexOf("{");
-    if (jsonStart === -1) return undefined;
-    const parsed = JSON.parse(trimmed.slice(jsonStart));
-    return CaseTagsSchema.parse(parsed);
-  } catch {
-    return undefined;
-  }
 }
