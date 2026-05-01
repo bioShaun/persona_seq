@@ -83,8 +83,11 @@ describe("proposal workflow helpers", () => {
   it("confirms a revision with analyst text", () => {
     expect(
       markRevisionConfirmed({
+        revisionNumber: 1,
+        customerFeedbackText: null,
         aiDraft: "AI 草稿",
         analystConfirmedText: "分析人员确认版",
+        revisionNotes: null,
       }).analystConfirmedText,
     ).toBe("分析人员确认版");
   });
@@ -123,15 +126,22 @@ describe("proposal workflow helpers", () => {
   it("rejects empty analyst confirmed text", () => {
     expect(() =>
       markRevisionConfirmed({
+        revisionNumber: 1,
+        customerFeedbackText: null,
         aiDraft: "AI 草稿",
         analystConfirmedText: " ",
+        revisionNotes: null,
       }),
     ).toThrow("Analyst confirmed text is required");
   });
 
   it("sets sent timestamp when PM sends a confirmed proposal", () => {
     const sent = markRevisionSent({
+      revisionNumber: 1,
+      customerFeedbackText: null,
+      aiDraft: "AI 草稿",
       analystConfirmedText: "确认方案",
+      revisionNotes: null,
       sentAt: new Date("2026-04-27T00:00:00.000Z"),
     });
 

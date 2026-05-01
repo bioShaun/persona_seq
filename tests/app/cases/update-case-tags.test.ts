@@ -21,7 +21,7 @@ describe("updateCaseTags", () => {
   });
 
   it("updates tag fields with valid input", async () => {
-    mockedPrisma.proposalCase.update.mockResolvedValue({} as never);
+    vi.mocked(prisma.proposalCase.update).mockResolvedValue({} as never);
 
     await updateCaseTags("case-1", {
       organism: "小麦",
@@ -38,7 +38,7 @@ describe("updateCaseTags", () => {
   });
 
   it("sets updatedAt on tag update", async () => {
-    mockedPrisma.proposalCase.update.mockResolvedValue({} as never);
+    vi.mocked(prisma.proposalCase.update).mockResolvedValue({} as never);
 
     await updateCaseTags("case-1", { organism: "水稻" });
 
@@ -82,7 +82,7 @@ describe("reExtractCaseTags", () => {
   it("calls AI provider with case text and saves extracted tags", async () => {
     const { reExtractCaseTags } = await import("@/lib/db/proposal-repository");
 
-    mockedPrisma.proposalCase.findUnique.mockResolvedValue({
+    vi.mocked(prisma.proposalCase.findUnique).mockResolvedValue({
       id: "case-1",
       originalRequestText: "需要小麦BSA-seq分析",
       requirementSummary: "小麦抗病基因定位",
@@ -95,7 +95,7 @@ describe("reExtractCaseTags", () => {
       ),
     };
 
-    mockedPrisma.proposalCase.update.mockResolvedValue({} as never);
+    vi.mocked(prisma.proposalCase.update).mockResolvedValue({} as never);
 
     await reExtractCaseTags("case-1", mockProvider);
 
@@ -113,7 +113,7 @@ describe("reExtractCaseTags", () => {
   it("saves with null tags when AI returns unparseable text", async () => {
     const { reExtractCaseTags } = await import("@/lib/db/proposal-repository");
 
-    mockedPrisma.proposalCase.findUnique.mockResolvedValue({
+    vi.mocked(prisma.proposalCase.findUnique).mockResolvedValue({
       id: "case-1",
       originalRequestText: "需求文本",
       requirementSummary: null,
@@ -124,7 +124,7 @@ describe("reExtractCaseTags", () => {
       generateText: vi.fn().mockResolvedValue("这不是JSON"),
     };
 
-    mockedPrisma.proposalCase.update.mockResolvedValue({} as never);
+    vi.mocked(prisma.proposalCase.update).mockResolvedValue({} as never);
 
     await reExtractCaseTags("case-1", mockProvider);
 
