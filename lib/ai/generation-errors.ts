@@ -1,3 +1,10 @@
+export class AIGenerationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AIGenerationError";
+  }
+}
+
 export function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }

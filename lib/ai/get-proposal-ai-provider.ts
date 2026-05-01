@@ -9,6 +9,7 @@ const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_TOKENS = 5000;
 const DEFAULT_TEMPERATURE = 0.35;
+const DEFAULT_JSON_MODE = "json_schema";
 
 function parseIntegerOrDefault(raw: string | undefined, defaultValue: number) {
   if (!raw) return defaultValue;
@@ -32,6 +33,11 @@ function parseTemperatureOrDefault(raw: string | undefined, defaultValue: number
 function normalizeBaseUrl(raw: string | undefined): string {
   const trimmed = (raw ?? DEFAULT_BASE).trim().replace(/\/+$/, "");
   return trimmed.length > 0 ? trimmed : DEFAULT_BASE;
+}
+
+function normalizeJsonMode(raw: string | undefined): "json_schema" | "json_object" {
+  const normalized = (raw ?? DEFAULT_JSON_MODE).trim().toLowerCase();
+  return normalized === "json_object" ? "json_object" : "json_schema";
 }
 
 /**
@@ -69,6 +75,7 @@ export function getProposalAiProvider(): ProposalAiProvider {
       process.env.AI_TEMPERATURE,
       DEFAULT_TEMPERATURE,
     );
+    const jsonMode = normalizeJsonMode(process.env.AI_JSON_MODE);
 
     return new OpenAiChatProposalAiProvider({
       apiKey,
@@ -77,6 +84,7 @@ export function getProposalAiProvider(): ProposalAiProvider {
       timeoutMs,
       maxTokens,
       temperature,
+      jsonMode,
     });
   }
 
