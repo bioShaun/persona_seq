@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CaseTagsSchema } from "@/lib/domain/case-tags";
+import { CaseTagsSchema, hasAnyMeaningfulTag } from "@/lib/domain/case-tags";
 
 describe("CaseTagsSchema", () => {
   it("accepts a fully valid tag object", () => {
@@ -49,5 +49,37 @@ describe("CaseTagsSchema", () => {
     expect(() =>
       CaseTagsSchema.parse({ productLine: null, organism: null }),
     ).not.toThrow();
+  });
+});
+
+describe("hasAnyMeaningfulTag", () => {
+  it("returns false for an empty object", () => {
+    expect(hasAnyMeaningfulTag({})).toBe(false);
+  });
+
+  it("returns false when all fields are null/undefined/empty", () => {
+    expect(
+      hasAnyMeaningfulTag({
+        productLine: null,
+        organism: null,
+        application: null,
+        analysisDepth: null,
+        sampleTypes: [],
+        platforms: [],
+        keywordTags: [],
+      }),
+    ).toBe(false);
+  });
+
+  it("returns true when a single-select field is set", () => {
+    expect(hasAnyMeaningfulTag({ productLine: "BSA-seq" })).toBe(true);
+  });
+
+  it("returns true when a multi-select field has items", () => {
+    expect(hasAnyMeaningfulTag({ sampleTypes: ["叶片"] })).toBe(true);
+  });
+
+  it("returns true when keywordTags has items", () => {
+    expect(hasAnyMeaningfulTag({ keywordTags: ["VRN1"] })).toBe(true);
   });
 });

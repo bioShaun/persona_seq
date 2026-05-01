@@ -81,3 +81,15 @@ export const CaseTagsSchema = z.object({
 });
 
 export type CaseTags = z.infer<typeof CaseTagsSchema>;
+
+export function hasAnyMeaningfulTag(tags: CaseTags): boolean {
+  return !!(
+    tags.productLine ||
+    tags.organism ||
+    tags.application ||
+    tags.analysisDepth ||
+    (tags.sampleTypes && tags.sampleTypes.length > 0) ||
+    (tags.platforms && tags.platforms.length > 0) ||
+    (tags.keywordTags && tags.keywordTags.length > 0)
+  );
+}

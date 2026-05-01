@@ -4,7 +4,7 @@ import { TagExtractionSchema } from "../lib/ai/proposal-schema";
 import { OpenAiChatProposalAiProvider } from "../lib/ai/openai-chat-provider";
 import { MockProposalAiProvider } from "../lib/ai/mock-provider";
 import type { ProposalAiProvider } from "../lib/ai/types";
-import { PRODUCT_LINES, ORGANISMS, APPLICATIONS, ANALYSIS_DEPTHS, SAMPLE_TYPES, PLATFORMS } from "../lib/domain/case-tags";
+import { PRODUCT_LINES, ORGANISMS, APPLICATIONS, ANALYSIS_DEPTHS, SAMPLE_TYPES, PLATFORMS, hasAnyMeaningfulTag } from "../lib/domain/case-tags";
 
 dotenv.config();
 
@@ -38,8 +38,8 @@ async function main() {
         "TagExtraction",
       );
 
-      if (!tags) {
-        console.log("  ⚠️  Failed to parse tags from AI response, skipping.");
+      if (!hasAnyMeaningfulTag(tags)) {
+        console.log("  ⚠️  AI returned no meaningful tags, skipping.");
         continue;
       }
 

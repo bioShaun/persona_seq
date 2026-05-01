@@ -8,7 +8,7 @@ import {
 import { TagExtractionSchema } from "@/lib/ai/proposal-schema";
 import type { ProposalAiProvider } from "@/lib/ai/types";
 import { prisma } from "@/lib/db/prisma";
-import type { CaseTags } from "@/lib/domain/case-tags";
+import { hasAnyMeaningfulTag, type CaseTags } from "@/lib/domain/case-tags";
 
 type CreateProposalCaseInput = {
   title: string;
@@ -968,7 +968,7 @@ export async function reExtractCaseTags(
   return prisma.proposalCase.update({
     where: { id: caseId },
     data: {
-      ...(tags
+      ...(tags && hasAnyMeaningfulTag(tags)
         ? {
             productLine: tags.productLine ?? null,
             organism: tags.organism ?? null,
