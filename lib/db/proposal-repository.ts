@@ -949,9 +949,13 @@ export async function reExtractCaseTags(
     | undefined;
 
   if ("generateJson" in aiProvider) {
-    tags = (
-      await aiProvider.generateJson(prompt, TagExtractionSchema, "TagExtraction")
-    ).tags;
+    try {
+      tags = (
+        await aiProvider.generateJson(prompt, TagExtractionSchema, "TagExtraction")
+      ).tags;
+    } catch {
+      tags = undefined;
+    }
   } else {
     try {
       const text = await aiProvider.generateText(prompt);
