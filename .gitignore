@@ -14,3 +14,4 @@ worktrees/
 # generated
 tsconfig.tsbuildinfo
 .pi/
+.claude/
