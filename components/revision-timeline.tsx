@@ -4,6 +4,7 @@ type RevisionItem = {
   id: string;
   revisionNumber: number;
   customerFeedbackText: string | null;
+  aiDraft: string | null;
   revisionNotes: string | null;
   confirmedByAnalystAt: Date | null;
   sentToCustomerAt: Date | null;
@@ -42,7 +43,11 @@ export function RevisionTimeline({ revisions }: { revisions: RevisionItem[] }) {
                 第 {revision.revisionNumber} 轮
               </h3>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                {revision.customerFeedbackText?.trim() || "首轮方案"}
+                {revision.customerFeedbackText?.trim()
+                  ? revision.aiDraft
+                    ? revision.customerFeedbackText.trim()
+                    : `客户反馈已登记，等待生成草案...\n\n${revision.customerFeedbackText.trim()}`
+                  : "首轮方案"}
               </p>
               {revision.revisionNotes?.trim() ? (
                 <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground/80">

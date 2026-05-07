@@ -15,7 +15,7 @@ export type ProposalCaseSummary = {
 export type RevisionDraft = {
   revisionNumber: number;
   customerFeedbackText: string | null;
-  aiDraft: string;
+  aiDraft: string | null;
   analystConfirmedText: string | null;
   revisionNotes: string | null;
 };

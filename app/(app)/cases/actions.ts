@@ -9,16 +9,21 @@ import { errorMessage } from "@/lib/ai/generation-errors";
 import { getProposalAiProvider } from "@/lib/ai/get-proposal-ai-provider";
 import { runInitialDraftGeneration } from "@/lib/generation/initial";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { createRevisionFromCustomerFeedback as buildFeedbackRevision } from "@/lib/domain/proposal-workflow";
+import {
+  createRevisionFromCustomerFeedback as buildFeedbackRevision,
+  enterCustomerFeedback as buildCustomerFeedback,
+  completeRevisionDraft as buildRevisionDraft,
+} from "@/lib/domain/proposal-workflow";
 import {
   assertCaseReadyForFeedbackRevision,
   assertCaseTagsEditable,
+  completeRevisionFromFeedback,
   confirmRevision,
   createProposalCase,
+  enterCustomerFeedback,
   getProposalCaseDetail,
   invalidateEmbedding,
   loadCaseWithRevision,
-  persistFeedbackRevision,
   markCustomerAccepted,
   markCustomerCanceled,
   markSentToCustomer,
@@ -151,6 +156,99 @@ export async function markCanceledAction(formData: FormData) {
   revalidatePath(`/cases/${input.proposalCaseId}`);
 }
 
+export async function enterCustomerFeedbackAction(formData: FormData) {
+  const input = parseCreateRevisionFromFeedbackInput(formData);
+  const currentUser = await getCurrentUser();
+
+  const proposalCase = await loadCaseWithRevision(input.proposalCaseId);
+
+  if (!proposalCase) {
+    throw new Error("Proposal case was not found");
+  }
+  const previousRevision = proposalCase.revisions[0] ?? null;
+  assertCaseReadyForFeedbackRevision(proposalCase, previousRevision);
+
+  const revisionData = buildCustomerFeedback({
+    currentRevisionNumber: proposalCase.currentRevisionNumber,
+    customerFeedbackText: input.customerFeedbackText,
+    revisionNotes: null,
+  });
+
+  await enterCustomerFeedback({
+    proposalCaseId: input.proposalCaseId,
+    actorUserId: currentUser.id,
+    revisionData,
+  });
+
+  revalidatePath(`/cases/${input.proposalCaseId}`);
+}
+
+export async function generateRevisionFromFeedbackAction(formData: FormData) {
+  const proposalCaseId = formData.get("proposalCaseId");
+  if (typeof proposalCaseId !== "string") {
+    throw new Error("Proposal case ID is required");
+  }
+
+  const currentUser = await getCurrentUser();
+
+  const proposalCase = await getProposalCaseDetail(proposalCaseId);
+
+  if (!proposalCase) {
+    throw new Error("Proposal case was not found");
+  }
+
+  if (proposalCase.status !== "REVISION_NEEDED") {
+    throw new Error("Proposal case is not in revision-needed state");
+  }
+
+  const currentRevision = proposalCase.revisions.find(
+    (r) => r.revisionNumber === proposalCase.currentRevisionNumber,
+  );
+
+  if (!currentRevision?.customerFeedbackText?.trim()) {
+    throw new Error("Customer feedback text is required for revision generation");
+  }
+
+  const revisionsSentToCustomer = proposalCase.revisions
+    .filter((r) => r.revisionNumber < proposalCase.currentRevisionNumber)
+    .sort((a, b) => b.revisionNumber - a.revisionNumber);
+
+  const lastSentRevision = revisionsSentToCustomer[0];
+
+  if (!lastSentRevision?.analystConfirmedText?.trim()) {
+    throw new Error(
+      "Previous analyst-confirmed proposal is required before generating a revision",
+    );
+  }
+
+  const provider = getProposalAiProvider();
+  const draft = await generateRevisionProposalDraft(provider, {
+    originalRequestText: proposalCase.originalRequestText,
+    previousConfirmedProposal: lastSentRevision.analystConfirmedText,
+    customerFeedbackText: currentRevision.customerFeedbackText,
+  });
+
+  const revisionDraft = buildRevisionDraft({
+    revisionNumber: proposalCase.currentRevisionNumber,
+    aiDraft: draft.proposalDraft,
+  });
+
+  await completeRevisionFromFeedback({
+    proposalCaseId,
+    actorUserId: currentUser.id,
+    revisionData: revisionDraft,
+    suggestedTitle: draft.suggestedTitle,
+    tags: draft.tags,
+  });
+
+  // Invalidate stale embedding when content changes
+  void invalidateEmbedding(proposalCaseId).catch((error) => {
+    console.error("Embedding invalidation failed:", error);
+  });
+
+  revalidatePath(`/cases/${proposalCaseId}`);
+}
+
 export async function createRevisionFromFeedback(formData: FormData) {
   const input = parseCreateRevisionFromFeedbackInput(formData);
   const currentUser = await getCurrentUser();
@@ -178,10 +276,23 @@ export async function createRevisionFromFeedback(formData: FormData) {
     revisionNotes: draft.revisionNotes ?? null,
   });
 
-  await persistFeedbackRevision({
+  await enterCustomerFeedback({
     proposalCaseId: input.proposalCaseId,
     actorUserId: currentUser.id,
-    revisionData,
+    revisionData: {
+      revisionNumber: revisionData.revisionNumber,
+      customerFeedbackText: revisionData.customerFeedbackText ?? "",
+      revisionNotes: revisionData.revisionNotes,
+    },
+  });
+
+  await completeRevisionFromFeedback({
+    proposalCaseId: input.proposalCaseId,
+    actorUserId: currentUser.id,
+    revisionData: {
+      revisionNumber: revisionData.revisionNumber,
+      aiDraft: revisionData.aiDraft ?? "",
+    },
     suggestedTitle: draft.suggestedTitle,
     tags: draft.tags,
   });

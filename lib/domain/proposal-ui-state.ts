@@ -12,6 +12,10 @@ export function canProcessCustomerFeedback(status: ProposalStatus) {
   return status === "WAITING_CUSTOMER_FEEDBACK";
 }
 
+export function isRevisionNeeded(status: ProposalStatus) {
+  return status === "REVISION_NEEDED";
+}
+
 export function isEditableCase(status: ProposalStatus) {
   return status !== "ACCEPTED" && status !== "CANCELED";
 }

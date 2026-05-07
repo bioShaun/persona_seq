@@ -47,8 +47,6 @@ export async function regenerateProposalDraft(
     };
   }
 
-  const nextRevisionNumber = proposalCase.currentRevisionNumber + 1;
-
   await prisma.$transaction(async (tx) => {
     await tx.proposalCase.update({
       where: { id: proposalCase.id },
@@ -61,7 +59,6 @@ export async function regenerateProposalDraft(
         generationStartedAt: new Date(),
         generationFinishedAt: null,
         generationAttemptCount: { increment: 1 },
-        currentRevisionNumber: nextRevisionNumber,
       },
     });
 
@@ -72,7 +69,7 @@ export async function regenerateProposalDraft(
         action: "regenerate_proposal",
         beforeStatus: proposalCase.status,
         afterStatus: ProposalStatus.DRAFTING,
-        metadata: { revisionNumber: nextRevisionNumber },
+        metadata: { revisionNumber: proposalCase.currentRevisionNumber },
       },
     });
   });
@@ -124,7 +121,7 @@ export async function regenerateProposalDraft(
           id: proposalCase.id,
           status: ProposalStatus.DRAFTING,
           generationStatus: GenerationStatus.RUNNING,
-          currentRevisionNumber: nextRevisionNumber,
+          currentRevisionNumber: proposalCase.currentRevisionNumber,
           finalOutcome: null,
         },
         data: {
@@ -155,11 +152,23 @@ export async function regenerateProposalDraft(
         return true;
       }
 
-      await tx.revision.create({
-        data: {
+      await tx.revision.upsert({
+        where: {
+          proposalCaseId_revisionNumber: {
+            proposalCaseId: proposalCase.id,
+            revisionNumber: proposalCase.currentRevisionNumber,
+          },
+        },
+        create: {
           proposalCaseId: proposalCase.id,
-          revisionNumber: nextRevisionNumber,
+          revisionNumber: proposalCase.currentRevisionNumber,
           aiDraft: draft.proposalDraft,
+        },
+        update: {
+          aiDraft: draft.proposalDraft,
+          analystConfirmedText: null,
+          confirmedByAnalystAt: null,
+          sentToCustomerAt: null,
         },
       });
 
@@ -170,7 +179,7 @@ export async function regenerateProposalDraft(
           action: "regenerate_proposal_draft",
           beforeStatus: ProposalStatus.DRAFTING,
           afterStatus: ProposalStatus.ANALYST_REVIEW,
-          metadata: { revisionNumber: nextRevisionNumber },
+          metadata: { revisionNumber: proposalCase.currentRevisionNumber },
         },
       });
 

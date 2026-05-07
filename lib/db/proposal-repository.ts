@@ -46,14 +46,22 @@ type MarkCustomerOutcomeInput = {
   actorUserId: string;
 };
 
-type PersistFeedbackRevisionInput = {
+type EnterCustomerFeedbackInput = {
   proposalCaseId: string;
   actorUserId: string;
   revisionData: {
     revisionNumber: number;
     customerFeedbackText: string;
-    aiDraft: string;
     revisionNotes: string | null;
+  };
+};
+
+type CompleteRevisionFromFeedbackInput = {
+  proposalCaseId: string;
+  actorUserId: string;
+  revisionData: {
+    revisionNumber: number;
+    aiDraft: string;
   };
   suggestedTitle?: string;
   tags?: CaseTags;
@@ -172,6 +180,17 @@ export function assertCaseReadyForFeedbackRevision(
   }
 }
 
+export function assertCaseInRevisionNeeded(
+  proposalCase: ProposalCaseInvariantSnapshot,
+) {
+  if (
+    proposalCase.status !== ProposalStatus.REVISION_NEEDED ||
+    proposalCase.finalOutcome !== null
+  ) {
+    throw new Error("Proposal case is not in revision-needed state");
+  }
+}
+
 export async function listProposalCases() {
   return prisma.proposalCase.findMany({
     orderBy: { updatedAt: "desc" },
@@ -223,6 +242,7 @@ export async function loadCaseWithRevision(id: string) {
           proposalCaseId: true,
           revisionNumber: true,
           analystConfirmedText: true,
+          customerFeedbackText: true,
           sentToCustomerAt: true,
         },
       },
@@ -759,8 +779,8 @@ export async function markCustomerCanceled(input: MarkCustomerOutcomeInput) {
   });
 }
 
-export async function persistFeedbackRevision(
-  input: PersistFeedbackRevisionInput,
+export async function enterCustomerFeedback(
+  input: EnterCustomerFeedbackInput,
 ) {
   return prisma.$transaction(async (tx) => {
     const proposalCase = await tx.proposalCase.findUnique({
@@ -799,7 +819,7 @@ export async function persistFeedbackRevision(
         currentRevisionNumber: proposalCase.currentRevisionNumber,
       },
       data: {
-        status: ProposalStatus.ANALYST_REVIEW,
+        status: ProposalStatus.REVISION_NEEDED,
         currentRevisionNumber: input.revisionData.revisionNumber,
       },
     });
@@ -813,7 +833,6 @@ export async function persistFeedbackRevision(
         proposalCaseId: input.proposalCaseId,
         revisionNumber: input.revisionData.revisionNumber,
         customerFeedbackText: input.revisionData.customerFeedbackText,
-        aiDraft: input.revisionData.aiDraft,
         revisionNotes: input.revisionData.revisionNotes,
       },
     });
@@ -823,8 +842,77 @@ export async function persistFeedbackRevision(
         proposalCaseId: input.proposalCaseId,
         revisionId: createdRevision.id,
         actorUserId: input.actorUserId,
-        action: "generate_revision_draft",
+        action: "enter_customer_feedback",
         beforeStatus: ProposalStatus.WAITING_CUSTOMER_FEEDBACK,
+        afterStatus: ProposalStatus.REVISION_NEEDED,
+      },
+    });
+
+    return createdRevision;
+  });
+}
+
+export async function completeRevisionFromFeedback(
+  input: CompleteRevisionFromFeedbackInput,
+) {
+  return prisma.$transaction(async (tx) => {
+    const proposalCase = await tx.proposalCase.findUnique({
+      where: { id: input.proposalCaseId },
+      select: {
+        id: true,
+        status: true,
+        currentRevisionNumber: true,
+        finalOutcome: true,
+      },
+    });
+
+    if (!proposalCase) {
+      throw new Error("Proposal case was not found");
+    }
+
+    assertCaseInRevisionNeeded(proposalCase);
+
+    if (proposalCase.currentRevisionNumber !== input.revisionData.revisionNumber) {
+      throw new Error(
+        "Current revision number does not match the revision being completed",
+      );
+    }
+
+    const updateResult = await tx.proposalCase.updateMany({
+      where: {
+        id: input.proposalCaseId,
+        status: ProposalStatus.REVISION_NEEDED,
+        finalOutcome: null,
+        currentRevisionNumber: input.revisionData.revisionNumber,
+      },
+      data: {
+        status: ProposalStatus.ANALYST_REVIEW,
+      },
+    });
+
+    if (updateResult.count !== 1) {
+      throw new Error("Proposal case is not in revision-needed state");
+    }
+
+    const updatedRevision = await tx.revision.update({
+      where: {
+        proposalCaseId_revisionNumber: {
+          proposalCaseId: input.proposalCaseId,
+          revisionNumber: input.revisionData.revisionNumber,
+        },
+      },
+      data: {
+        aiDraft: input.revisionData.aiDraft,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        proposalCaseId: input.proposalCaseId,
+        revisionId: updatedRevision.id,
+        actorUserId: input.actorUserId,
+        action: "complete_revision_draft",
+        beforeStatus: ProposalStatus.REVISION_NEEDED,
         afterStatus: ProposalStatus.ANALYST_REVIEW,
       },
     });
@@ -854,7 +942,7 @@ export async function persistFeedbackRevision(
       });
     }
 
-    return createdRevision;
+    return updatedRevision;
   });
 }
 

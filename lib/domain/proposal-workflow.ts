@@ -49,6 +49,46 @@ export function createRevisionFromCustomerFeedback(input: {
   };
 }
 
+export function enterCustomerFeedback(input: {
+  currentRevisionNumber: number;
+  customerFeedbackText: string;
+  revisionNotes: string | null;
+}) {
+  if (!isPositiveInteger(input.currentRevisionNumber)) {
+    throw new Error("Current revision number must be a positive integer");
+  }
+
+  if (!hasText(input.customerFeedbackText)) {
+    throw new Error("Customer feedback text is required");
+  }
+
+  return {
+    revisionNumber: input.currentRevisionNumber + 1,
+    customerFeedbackText: input.customerFeedbackText,
+    aiDraft: null,
+    analystConfirmedText: null,
+    revisionNotes: input.revisionNotes,
+  };
+}
+
+export function completeRevisionDraft(input: {
+  revisionNumber: number;
+  aiDraft: string;
+}) {
+  if (!isPositiveInteger(input.revisionNumber)) {
+    throw new Error("Revision number must be a positive integer");
+  }
+
+  if (!hasText(input.aiDraft)) {
+    throw new Error("AI draft is required");
+  }
+
+  return {
+    revisionNumber: input.revisionNumber,
+    aiDraft: input.aiDraft,
+  };
+}
+
 export function markRevisionConfirmed(
   input: RevisionWorkflowState & { analystConfirmedText: string; confirmedAt?: Date },
 ) {

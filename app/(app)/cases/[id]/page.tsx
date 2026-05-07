@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import {
   createRevisionFromFeedback,
+  enterCustomerFeedbackAction,
+  generateRevisionFromFeedbackAction,
   markAcceptedAction,
   markCanceledAction,
   sendCurrentRevision,
@@ -20,6 +22,7 @@ import {
   canConfirmCurrentRevision,
   canSendCurrentRevision,
   canProcessCustomerFeedback,
+  isRevisionNeeded,
   isEditableCase,
 } from "@/lib/domain/proposal-ui-state";
 import { findSimilarCasesV2Safely } from "@/lib/search/similar-cases";
@@ -220,7 +223,9 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                 proposalCaseId={proposalCase.id}
                 revisionId={currentRevision.id}
                 initialText={
-                  currentRevision.analystConfirmedText?.trim() || currentRevision.aiDraft
+                  currentRevision.analystConfirmedText?.trim() ||
+                  currentRevision.aiDraft ||
+                  ""
                 }
               />
             ) : initialDraftWorkflowReady &&
@@ -300,7 +305,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                     </form>
                   </div>
 
-                  <form action={createRevisionFromFeedback} className="space-y-3">
+                  <form action={enterCustomerFeedbackAction} className="space-y-3">
                     <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
                     <div className="space-y-2">
                       <Label htmlFor="customer-feedback-text">客户反馈原文</Label>
@@ -315,8 +320,8 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                     </div>
                     <div className="flex justify-end">
                       <SubmitButton
-                        idleText="生成下一轮修订草稿"
-                        pendingText="生成中..."
+                        idleText="登记反馈并进入修订"
+                        pendingText="提交中..."
                       />
                     </div>
                   </form>
@@ -326,6 +331,27 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
                   当前状态暂不需要录入客户反馈，待流程进入反馈阶段后可继续操作。
                 </p>
               )}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {isRevisionNeeded(proposalCase.status) ? (
+          <Card className="border-border bg-card text-card-foreground" id="revision-needed">
+            <CardHeader>
+              <CardTitle>客户反馈已登记，等待生成修订草案</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                当前处于「修订待处理」状态。客户反馈已记录，请触发生成修订草案。
+              </p>
+              <form action={generateRevisionFromFeedbackAction}>
+                <input type="hidden" name="proposalCaseId" value={proposalCase.id} />
+                <SubmitButton
+                  idleText="生成修订草案"
+                  pendingText="生成中..."
+                  className="w-full"
+                />
+              </form>
             </CardContent>
           </Card>
         ) : null}

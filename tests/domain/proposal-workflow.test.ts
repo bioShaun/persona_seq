@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createInitialRevision,
   createRevisionFromCustomerFeedback,
+  enterCustomerFeedback,
+  completeRevisionDraft,
   markRevisionConfirmed,
   markRevisionSent,
 } from "@/lib/domain/proposal-workflow";
@@ -78,6 +80,72 @@ describe("proposal workflow helpers", () => {
         }),
       ).toThrow("Current revision number must be a positive integer");
     }
+  });
+
+  it("enters customer feedback with null aiDraft and incremented revision number", () => {
+    expect(
+      enterCustomerFeedback({
+        currentRevisionNumber: 2,
+        customerFeedbackText: "客户希望增加 WGCNA。",
+        revisionNotes: "增加 WGCNA 模块。",
+      }),
+    ).toEqual({
+      revisionNumber: 3,
+      customerFeedbackText: "客户希望增加 WGCNA。",
+      aiDraft: null,
+      analystConfirmedText: null,
+      revisionNotes: "增加 WGCNA 模块。",
+    });
+  });
+
+  it("rejects empty customer feedback when entering feedback", () => {
+    expect(() =>
+      enterCustomerFeedback({
+        currentRevisionNumber: 1,
+        customerFeedbackText: " ",
+        revisionNotes: null,
+      }),
+    ).toThrow("Customer feedback text is required");
+  });
+
+  it("rejects invalid revision number when entering feedback", () => {
+    expect(() =>
+      enterCustomerFeedback({
+        currentRevisionNumber: 0,
+        customerFeedbackText: "客户反馈",
+        revisionNotes: null,
+      }),
+    ).toThrow("Current revision number must be a positive integer");
+  });
+
+  it("completes a revision draft with AI draft", () => {
+    expect(
+      completeRevisionDraft({
+        revisionNumber: 3,
+        aiDraft: "修订草稿（含 WGCNA）",
+      }),
+    ).toEqual({
+      revisionNumber: 3,
+      aiDraft: "修订草稿（含 WGCNA）",
+    });
+  });
+
+  it("rejects empty AI draft when completing revision", () => {
+    expect(() =>
+      completeRevisionDraft({
+        revisionNumber: 3,
+        aiDraft: " ",
+      }),
+    ).toThrow("AI draft is required");
+  });
+
+  it("rejects invalid revision number when completing revision", () => {
+    expect(() =>
+      completeRevisionDraft({
+        revisionNumber: 0,
+        aiDraft: "修订草稿",
+      }),
+    ).toThrow("Revision number must be a positive integer");
   });
 
   it("confirms a revision with analyst text", () => {

@@ -98,7 +98,7 @@ model Revision {
   proposalCaseId        String
   revisionNumber        Int
   customerFeedbackText  String?
-  aiDraft               String
+  aiDraft               String?
   analystConfirmedText  String?
   revisionNotes         String?
   sentToCustomerAt      DateTime?
